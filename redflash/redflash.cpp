@@ -140,6 +140,7 @@ std::string bufferInfo;
 float3         camera_up;
 float3         camera_lookat;
 float3         camera_eye;
+float          camera_fov;
 Matrix4x4      camera_rotate;
 bool           camera_changed = true;
 bool           postprocessing_needs_init = true;
@@ -717,6 +718,7 @@ void setupScene()
 
 void setupCamera()
 {
+    camera_fov = 35;
     camera_up = make_float3(0.0f, 1.0f, 0.0f);
 
     // look at emission
@@ -750,15 +752,28 @@ void setupCamera()
     camera_rotate = Matrix4x4::identity();
 }
 
+void updateFrame(float time)
+{
+    // アニメーションを実装する
+
+    camera_up = make_float3(0.0f, 1.0f, 0.0f);
+    camera_fov = lerp(35.0f, 1.0f, time / 5.0f);
+
+    // Lucyを中心にしたカット2（レイトレ合宿7提出版）
+    camera_eye = make_float3(9.55f, 144.84f, 214.05f);
+    camera_lookat = make_float3(1.60f, 149.38f, 200.70f);
+
+    camera_changed = true;
+}
+
 
 void updateCamera()
 {
-    const float fov = 35.0f;
     const float aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
 
     float3 camera_u, camera_v, camera_w;
     sutil::calculateCameraVariables(
-        camera_eye, camera_lookat, camera_up, fov, aspect_ratio,
+        camera_eye, camera_lookat, camera_up, camera_fov, aspect_ratio,
         camera_u, camera_v, camera_w, /*fov_is_vertical*/ true);
 
     frame = Matrix4x4::fromBasis(
@@ -775,7 +790,7 @@ void updateCamera()
     // camera_up     = make_float3( trans*make_float4( camera_up,     0.0f ) );
 
     sutil::calculateCameraVariables(
-        camera_eye, camera_lookat, camera_up, fov, aspect_ratio,
+        camera_eye, camera_lookat, camera_up, camera_fov, aspect_ratio,
         camera_u, camera_v, camera_w, true);
 
     camera_rotate = Matrix4x4::identity();
@@ -1281,7 +1296,9 @@ void printUsageAndExit(const std::string& argv0)
         "  -f | --file               Save single frame to file and exit.\n"
         "  -n | --nopbo              Disable GL interop for display buffer.\n"
         "  -s | --sample             Sample number.\n"
-        "  -t | --time               Time limit(ssc).\n"
+        "  -t | --time_limit         Time limit(ssc).\n"
+        "  --movie_time              Output Movie time length(ssc).\n"
+        "  --fps                     Frame per Second.\n"
         "App Keystrokes:\n"
         "  q  Quit\n"
         "  s  Save image to '" << SAMPLE_NAME << ".png'\n"
@@ -1306,6 +1323,10 @@ int main(int argc, char** argv)
     int sampleMax = 20;
     double time_limit = 60 * 60;// 1 hour
     bool use_time_limit = false;
+
+    // 動画の連番画像用
+    float movie_time = -1.0f;
+    float movie_fps = -1.0f;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -1338,7 +1359,7 @@ int main(int argc, char** argv)
             }
             sampleMax = atoi(argv[++i]);
         }
-        else if (arg == "-t" || arg == "--time")
+        else if (arg == "-t" || arg == "--time_limit")
         {
             if (i == argc - 1)
             {
@@ -1480,6 +1501,24 @@ int main(int argc, char** argv)
         {
             flag_debug = true;
         }
+        else if (arg == "--movie_time")
+        {
+            if (i == argc - 1)
+            {
+                std::cerr << "Option '" << argv[i] << "' requires additional argument.\n";
+                printUsageAndExit(argv[0]);
+            }
+            movie_time = atof(argv[++i]);
+        }
+        else if (arg == "--movie_fps")
+        {
+            if (i == argc - 1)
+            {
+                std::cerr << "Option '" << argv[i] << "' requires additional argument.\n";
+                printUsageAndExit(argv[0]);
+            }
+            movie_fps = atof(argv[++i]);
+        }
         else
         {
             std::cerr << "Unknown option '" << arg << "'\n";
@@ -1512,10 +1551,134 @@ int main(int argc, char** argv)
 
         context->validate();
 
-        if (out_file.empty())
+        // 動画の画像連番書き出しモード
+        if (movie_fps > 0.0f && movie_time > 0.0f)
+        {
+            setupPostprocessing();
+            Variable(denoiserStage->queryVariable("blend"))->setFloat(denoiseBlend);
+
+            if (denoiseMode > 0)
+            {
+                Variable albedoBuffer = denoiserStage->queryVariable("input_albedo_buffer");
+                albedoBuffer->set(getAlbedoBuffer());
+            }
+
+            if (denoiseMode > 1)
+            {
+                Variable normalBuffer = denoiserStage->queryVariable("input_normal_buffer");
+                normalBuffer->set(getNormalBuffer());
+            }
+
+            int frame_count = movie_fps * movie_time;
+            double frame_time_limit = time_limit / frame_count;
+
+            // print config
+            std::cout << "[info] frame_count: " << frame_count << " (fps: " << movie_fps << " x time: " << movie_time << " sec.)" << std::endl;
+            std::cout << "[info] resolution: " << width << "x" << height << " px" << std::endl;
+            std::cout << "[info] time_limit: " << time_limit << " sec." << std::endl;
+            std::cout << "[info] frame time_limit: " << frame_time_limit << " sec." << std::endl;
+            std::cout << "[info] sample_per_launch: " << sample_per_launch << std::endl;
+            std::cout << "[info] auto_set_sample_per_launch: " << auto_set_sample_per_launch << std::endl;
+            std::cout << "[info] auto_set_sample_per_launch_scale: " << auto_set_sample_per_launch_scale << std::endl;
+            std::cout << "[info] last_frame_scale: " << last_frame_scale << std::endl;
+            std::cout << "[info] tonemap_exposure: " << tonemap_exposure << std::endl;
+
+            for (int frame = 0; frame < frame_count; ++frame)
+            {
+                std::cout << "[info] frame: " << frame << std::endl;
+
+                float time = frame / movie_fps;
+                double frame_start_time = sutil::currentTime();
+                double last_time = frame_start_time;
+                bool finalFrame = false;
+                total_sample = 0;
+                sample_per_launch = 2;
+
+                updateFrame(time);
+                updateCamera();
+
+                std::cout << "[info] time: " << time << " fov: " << camera_fov << std::endl;
+
+                // NOTE: time_limit が指定されていたら、サンプル数は無制限にする
+                for (int i = 0; !finalFrame; ++i)
+                {
+                    double now = sutil::currentTime();
+                    double used_time = now - frame_start_time;
+                    double delta_time = now - last_time;
+                    double remain_time = frame_time_limit - used_time;
+                    last_time = now;
+
+                    std::cout << "loop:" << i << "\tsample_per_launch\t:" << sample_per_launch << "\tdelta_time:" << delta_time << "\tdelta_time_per_sample:" << delta_time / sample_per_launch << "\tused_time:" << used_time << "\tremain_time:" << remain_time << "\tsample:" << total_sample << "\tframe_number:" << frame_number << std::endl;
+
+                    if (i == 1)
+                    {
+                        sample_per_launch = (int)(remain_time / delta_time * auto_set_sample_per_launch_scale * sample_per_launch);
+                        std::cout << "[info] chnage sample_per_launch: " << sample_per_launch << " to " << sample_per_launch << std::endl;
+                        finalFrame = true;
+                    }
+
+                    context["sample_per_launch"]->setUint(sample_per_launch);
+                    context["frame_number"]->setUint(frame_number);
+                    context["total_sample"]->setUint(total_sample);
+
+                    if (finalFrame)
+                    {
+                        if (denoiser_perf_mode)
+                        {
+                            for (int i = 0; i < denoiser_perf_iter; i++)
+                            {
+                                commandListWithDenoiser->execute();
+                            }
+                        }
+                        else
+                        {
+                            commandListWithDenoiser->execute();
+                        }
+
+                        char filename[50];
+                        snprintf(filename, sizeof(filename), "%03d.png", frame + 1);
+
+                        displayBufferPNG(filename, denoisedBuffer);
+
+                        if (false && flag_debug)
+                        {
+                            snprintf(filename, sizeof(filename), "%03d_original.png", frame + 1);
+                            displayBufferPNG(filename, getOutputBuffer());
+
+                            snprintf(filename, sizeof(filename), "%03d_albedo.png", frame + 1);
+                            displayBufferPNG(filename, getAlbedoBuffer());
+
+                            snprintf(filename, sizeof(filename), "%03d_normal.png", frame + 1);
+                            displayBufferPNG(filename, getNormalBuffer());
+
+                            snprintf(filename, sizeof(filename), "%03d_liner.png", frame + 1);
+                            displayBufferPNG(filename, getLinerBuffer());
+                        }
+
+                        std::cout << "[info] total_sample: " << total_sample << std::endl;
+                    }
+                    else
+                    {
+                        commandListWithoutDenoiser->execute();
+                    }
+
+                    frame_number++;
+                    total_sample += sample_per_launch;
+                }
+            }
+
+            destroyContext();
+
+            double finish_time = sutil::currentTime();
+            double total_time = finish_time - launch_time;
+            std::cout << "[info] total_time: " << total_time << " sec." << std::endl;
+        }
+        // インタラクティブモード
+        else if (out_file.empty())
         {
             glutRun();
         }
+        // 静止画モード
         else
         {
             setupPostprocessing();
