@@ -1570,34 +1570,36 @@ int main(int argc, char** argv)
             }
 
             int frame_count = movie_fps * movie_time;
-            double frame_time_limit = time_limit / frame_count;
 
             // print config
             std::cout << "[info] frame_count: " << frame_count << " (fps: " << movie_fps << " x time: " << movie_time << " sec.)" << std::endl;
             std::cout << "[info] resolution: " << width << "x" << height << " px" << std::endl;
             std::cout << "[info] time_limit: " << time_limit << " sec." << std::endl;
-            std::cout << "[info] frame time_limit: " << frame_time_limit << " sec." << std::endl;
             std::cout << "[info] sample_per_launch: " << sample_per_launch << std::endl;
-            std::cout << "[info] auto_set_sample_per_launch: " << auto_set_sample_per_launch << std::endl;
             std::cout << "[info] auto_set_sample_per_launch_scale: " << auto_set_sample_per_launch_scale << std::endl;
             std::cout << "[info] last_frame_scale: " << last_frame_scale << std::endl;
             std::cout << "[info] tonemap_exposure: " << tonemap_exposure << std::endl;
 
             for (int frame = 0; frame < frame_count; ++frame)
             {
-                std::cout << "[info] frame: " << frame << std::endl;
+                float movie_time = frame / movie_fps;
 
-                float time = frame / movie_fps;
                 double frame_start_time = sutil::currentTime();
                 double last_time = frame_start_time;
                 bool finalFrame = false;
                 total_sample = 0;
+
+                // 1回目のサンプリング数は2で決め打ち
                 sample_per_launch = 2;
 
-                updateFrame(time);
+                double global_remain_time = time_limit - (frame_start_time - launch_time);
+                int rest_frame = frame_count - frame;
+                double frame_time_limit = global_remain_time / rest_frame;
+
+                updateFrame(movie_time);
                 updateCamera();
 
-                std::cout << "[info] time: " << time << " fov: " << camera_fov << std::endl;
+                std::cout << "[info] frame: " << frame << "\tmovie_time:" << movie_time << "\tframe_time_limit:" << frame_time_limit << std::endl;
 
                 // NOTE: time_limit が指定されていたら、サンプル数は無制限にする
                 for (int i = 0; !finalFrame; ++i)
@@ -1608,8 +1610,9 @@ int main(int argc, char** argv)
                     double remain_time = frame_time_limit - used_time;
                     last_time = now;
 
-                    std::cout << "loop:" << i << "\tsample_per_launch\t:" << sample_per_launch << "\tdelta_time:" << delta_time << "\tdelta_time_per_sample:" << delta_time / sample_per_launch << "\tused_time:" << used_time << "\tremain_time:" << remain_time << "\tsample:" << total_sample << "\tframe_number:" << frame_number << std::endl;
+                    std::cout << "[info] frame:" << frame << "\tloop:" << i << "\tused_time:" << (now - launch_time) << "\tsample_per_launch:" << sample_per_launch << "\tdelta_time:" << delta_time << "\tdelta_time_per_sample:" << delta_time / sample_per_launch << "\tused_time:" << used_time << "\tremain_time:" << remain_time << "\tsample:" << total_sample << "\tframe_number:" << frame_number << std::endl;
 
+                    // 1回目の結果から、時間切れしない sample_per_launch を決定する
                     if (i == 1)
                     {
                         sample_per_launch = (int)(remain_time / delta_time * auto_set_sample_per_launch_scale * sample_per_launch);
@@ -1640,7 +1643,7 @@ int main(int argc, char** argv)
 
                         displayBufferPNG(filename, denoisedBuffer);
 
-                        if (false && flag_debug)
+                        if (flag_debug)
                         {
                             snprintf(filename, sizeof(filename), "%03d_original.png", frame + 1);
                             displayBufferPNG(filename, getOutputBuffer());
@@ -1655,7 +1658,7 @@ int main(int argc, char** argv)
                             displayBufferPNG(filename, getLinerBuffer());
                         }
 
-                        std::cout << "[info] total_sample: " << total_sample << std::endl;
+                        std::cout << "[info] total_sample: " << total_sample + sample_per_launch << std::endl;
                     }
                     else
                     {
