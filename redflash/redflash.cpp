@@ -1610,13 +1610,15 @@ int main(int argc, char** argv)
                     double remain_time = frame_time_limit - used_time;
                     last_time = now;
 
-                    std::cout << "[info] frame:" << frame << "\tloop:" << i << "\tused_time:" << (now - launch_time) << "\tsample_per_launch:" << sample_per_launch << "\tdelta_time:" << delta_time << "\tdelta_time_per_sample:" << delta_time / sample_per_launch << "\tused_time:" << used_time << "\tremain_time:" << remain_time << "\tsample:" << total_sample << "\tframe_number:" << frame_number << std::endl;
+                    std::cout << "[info] frame:" << frame << "/" << frame_count << "(" << ((double)(frame + 1) / frame_count * 100) << "%)\tloop:" << i 
+                        << "\tused_time:" << (now - launch_time) << "/" << time_limit << "(" << ((double)(now - launch_time) / time_limit * 100) << "%)" << std::endl;
 
                     // 1‰ñ–Ú‚ÌŒ‹‰Ê‚©‚çAŽžŠÔØ‚ê‚µ‚È‚¢ sample_per_launch ‚ðŒˆ’è‚·‚é
                     if (i == 1)
                     {
-                        sample_per_launch = (int)(remain_time / delta_time * auto_set_sample_per_launch_scale * sample_per_launch);
-                        std::cout << "[info] chnage sample_per_launch: " << sample_per_launch << " to " << sample_per_launch << std::endl;
+                        int new_sample_per_launch = (int)(remain_time / delta_time * auto_set_sample_per_launch_scale * sample_per_launch);
+                        std::cout << "[info] chnage sample_per_launch: " << sample_per_launch << " to " << new_sample_per_launch << std::endl;
+                        sample_per_launch = new_sample_per_launch;
                         finalFrame = true;
                     }
 
@@ -1626,16 +1628,23 @@ int main(int argc, char** argv)
 
                     if (finalFrame)
                     {
-                        if (denoiser_perf_mode)
                         {
-                            for (int i = 0; i < denoiser_perf_iter; i++)
+                            double begin_time = sutil::currentTime();
+
+                            if (denoiser_perf_mode)
+                            {
+                                for (int i = 0; i < denoiser_perf_iter; i++)
+                                {
+                                    commandListWithDenoiser->execute();
+                                }
+                            }
+                            else
                             {
                                 commandListWithDenoiser->execute();
                             }
-                        }
-                        else
-                        {
-                            commandListWithDenoiser->execute();
+
+                            double end_time = sutil::currentTime();
+                            std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
                         }
 
                         char filename[50];
@@ -1662,7 +1671,12 @@ int main(int argc, char** argv)
                     }
                     else
                     {
+                        double begin_time = sutil::currentTime();
+
                         commandListWithoutDenoiser->execute();
+
+                        double end_time = sutil::currentTime();
+                        std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
                     }
 
                     frame_number++;
