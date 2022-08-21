@@ -37,7 +37,7 @@
 #include <cstdlib>
 #include <iomanip>
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 using namespace optix;
 
