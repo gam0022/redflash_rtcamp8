@@ -1575,8 +1575,6 @@ int main(int argc, char** argv)
 #endif
         }
 
-        std::vector<std::thread> threads;
-
         createContext();
 
         if (training_file.length() == 0 && training_file_2.length() != 0)
@@ -1597,6 +1595,7 @@ int main(int argc, char** argv)
         {
             setupPostprocessing();
             Variable(denoiserStage->queryVariable("blend"))->setFloat(denoiseBlend);
+            int all_frame_total_sample = 0;
 
             if (denoiseMode > 0)
             {
@@ -1621,6 +1620,10 @@ int main(int argc, char** argv)
             std::cout << "[info] last_frame_scale: " << last_frame_scale << std::endl;
             std::cout << "[info] tonemap_exposure: " << tonemap_exposure << std::endl;
 
+            // 画像の非同期保存のためのスレッド
+            std::vector<std::thread> threads;
+
+            // 画像の非同期保存のためのバッファ
             std::vector<unsigned char> pix(width* height * 3);
 
             for (int frame = 0; frame < frame_count; ++frame)
@@ -1703,10 +1706,6 @@ int main(int argc, char** argv)
                         // displayBufferPNG(filename, denoisedBuffer);
                         threads.push_back(displayBufferPNG_task(filename, denoisedBuffer, &pix[0]));
 
-                        //auto thd = displayBufferPNG_task(filename, denoisedBuffer, &pix[0]);
-                        //thd.join();
-
-
                         if (flag_debug)
                         {
                             snprintf(filename, sizeof(filename), "%03d_original.png", frame + 1);
@@ -1722,7 +1721,9 @@ int main(int argc, char** argv)
                             displayBufferPNG(filename, getLinerBuffer());
                         }
 
-                        std::cout << "[info] total_sample: " << total_sample + sample_per_launch << std::endl;
+                        total_sample += sample_per_launch;
+                        std::cout << "[info] total_sample: " << total_sample << std::endl;
+                        all_frame_total_sample += total_sample;
                     }
                     else
                     {
@@ -1732,10 +1733,10 @@ int main(int argc, char** argv)
 
                         double end_time = sutil::currentTime();
                         std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
-                    }
 
-                    frame_number++;
-                    total_sample += sample_per_launch;
+                        frame_number++;
+                        total_sample += sample_per_launch;
+                    }
                 }
             }
 
@@ -1744,6 +1745,7 @@ int main(int argc, char** argv)
             double finish_time = sutil::currentTime();
             double total_time = finish_time - launch_time;
             std::cout << "[info] total_time: " << total_time << " sec." << std::endl;
+            std::cout << "[info] all_frame_total_sample: " << all_frame_total_sample << std::endl;
         }
         // インタラクティブモード
         else if (out_file.empty())
