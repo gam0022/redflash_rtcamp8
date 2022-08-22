@@ -743,6 +743,116 @@ void sutil::displayBufferPNG(const char* filename, RTbuffer buffer, bool disable
     RT_CHECK_ERROR(rtBufferUnmap(buffer));
 }
 
+void sutil::getRawImageBuffer(const char* filename, Buffer buffer, unsigned char* pix, bool disable_srgb_conversion)
+{
+    getRawImageBuffer(filename, buffer->get(), pix, disable_srgb_conversion);
+}
+
+
+void sutil::getRawImageBuffer(const char* filename, RTbuffer buffer, unsigned char* pix, bool disable_srgb_conversion)
+{
+    GLsizei width, height;
+    RTsize buffer_width, buffer_height;
+
+    GLvoid* imageData;
+    RT_CHECK_ERROR(rtBufferMap(buffer, &imageData));
+
+    RT_CHECK_ERROR(rtBufferGetSize2D(buffer, &buffer_width, &buffer_height));
+    width = static_cast<GLsizei>(buffer_width);
+    height = static_cast<GLsizei>(buffer_height);
+
+    RTformat buffer_format;
+    RT_CHECK_ERROR(rtBufferGetFormat(buffer, &buffer_format));
+
+    const float gamma_inv = 1.0f / 2.2f;
+
+    switch (buffer_format) {
+    case RT_FORMAT_UNSIGNED_BYTE4:
+        // Data is BGRA and upside down, so we need to swizzle to RGB
+        for (int j = height - 1; j >= 0; --j) {
+            unsigned char* dst = &pix[0] + (3 * width * (height - 1 - j));
+            unsigned char* src = ((unsigned char*)imageData) + (4 * width * j);
+            for (int i = 0; i < width; i++) {
+                *dst++ = *(src + 2);
+                *dst++ = *(src + 1);
+                *dst++ = *(src + 0);
+                src += 4;
+            }
+        }
+        break;
+
+    case RT_FORMAT_FLOAT:
+        // This buffer is upside down
+        for (int j = height - 1; j >= 0; --j) {
+            unsigned char* dst = &pix[0] + width * (height - 1 - j);
+            float* src = ((float*)imageData) + (3 * width * j);
+            for (int i = 0; i < width; i++) {
+                int P;
+                if (disable_srgb_conversion)
+                    P = static_cast<int>((*src++) * 255.0f);
+                else
+                    P = static_cast<int>(std::pow(*src++, gamma_inv) * 255.0f);
+                unsigned int Clamped = P < 0 ? 0 : P > 0xff ? 0xff : P;
+
+                // write the pixel to all 3 channels
+                *dst++ = static_cast<unsigned char>(Clamped);
+                *dst++ = static_cast<unsigned char>(Clamped);
+                *dst++ = static_cast<unsigned char>(Clamped);
+            }
+        }
+        break;
+
+    case RT_FORMAT_FLOAT3:
+        // This buffer is upside down
+        for (int j = height - 1; j >= 0; --j) {
+            unsigned char* dst = &pix[0] + (3 * width * (height - 1 - j));
+            float* src = ((float*)imageData) + (3 * width * j);
+            for (int i = 0; i < width; i++) {
+                for (int elem = 0; elem < 3; ++elem) {
+                    int P;
+                    if (disable_srgb_conversion)
+                        P = static_cast<int>((*src++) * 255.0f);
+                    else
+                        P = static_cast<int>(std::pow(*src++, gamma_inv) * 255.0f);
+                    unsigned int Clamped = P < 0 ? 0 : P > 0xff ? 0xff : P;
+                    *dst++ = static_cast<unsigned char>(Clamped);
+                }
+            }
+        }
+        break;
+
+    case RT_FORMAT_FLOAT4:
+        // This buffer is upside down
+        for (int j = height - 1; j >= 0; --j) {
+            unsigned char* dst = &pix[0] + (3 * width * (height - 1 - j));
+            float* src = ((float*)imageData) + (4 * width * j);
+            for (int i = 0; i < width; i++) {
+                for (int elem = 0; elem < 3; ++elem) {
+                    int P;
+                    if (disable_srgb_conversion)
+                        P = static_cast<int>((*src++) * 255.0f);
+                    else
+                        P = static_cast<int>(std::pow(*src++, gamma_inv) * 255.0f);
+                    unsigned int Clamped = P < 0 ? 0 : P > 0xff ? 0xff : P;
+                    *dst++ = static_cast<unsigned char>(Clamped);
+                }
+
+                // skip alpha
+                src++;
+            }
+        }
+        break;
+
+    default:
+        fprintf(stderr, "Unrecognized buffer data type or format.\n");
+        exit(2);
+        break;
+    }
+
+    // Now unmap the buffer
+    RT_CHECK_ERROR(rtBufferUnmap(buffer));
+}
+
 
 void sutil::displayBufferGL( optix::Buffer buffer, bufferPixelFormat format, bool disable_srgb_conversion )
 {
