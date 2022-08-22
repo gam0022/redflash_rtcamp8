@@ -1690,20 +1690,21 @@ int main(int argc, char** argv)
                             std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
                         }
 
+
+                        for (std::thread& th : threads) {
+                            th.join();
+                        }
+
+                        threads.clear();
+
                         char filename[50];
                         snprintf(filename, sizeof(filename), "%03d.png", frame + 1);
 
                         // displayBufferPNG(filename, denoisedBuffer);
-                        //threads.push_back(displayBufferPNG(filename, denoisedBuffer));
+                        threads.push_back(displayBufferPNG_task(filename, denoisedBuffer, &pix[0]));
 
-                        //for (std::thread& th : threads) {
-                        //    th.join();
-                        //}
-
-                        //threads.clear();
-
-                        auto thd = displayBufferPNG_task(filename, denoisedBuffer, &pix[0]);
-                        thd.join();
+                        //auto thd = displayBufferPNG_task(filename, denoisedBuffer, &pix[0]);
+                        //thd.join();
 
 
                         if (flag_debug)
