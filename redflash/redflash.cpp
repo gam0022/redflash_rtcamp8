@@ -36,6 +36,10 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <iomanip>
+#include <thread>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 namespace fs = std::filesystem;
 
@@ -1307,12 +1311,47 @@ void printUsageAndExit(const std::string& argv0)
     exit(1);
 }
 
-void displayBufferPNG(const char* filename, Buffer& buffer)
+void SavePNG(const unsigned char* Pix, const char* fname, int wid, int hgt, int chan)
+{
+    if (Pix == NULL || wid < 1 || hgt < 1)
+        throw Exception("Image is ill-formed. Not saving");
+
+    if (chan != 1 && chan != 3 && chan != 4)
+        throw Exception("Attempting to save image with channel count != 1, 3, or 4.");
+
+    int bpp = chan;
+    int ret = stbi_write_png(fname, wid, hgt, bpp, Pix, wid * bpp);
+    if (!ret)
+        throw Exception("Failed to SavePNG");
+}
+
+std::thread displayBufferPNG(const char* filename, Buffer& buffer)
 {
     double begin = sutil::currentTime();
-    sutil::displayBufferPNG(filename, buffer, true);
+    std::vector<unsigned char> pix(width * height * 3);
+
+    sutil::getRawImageBuffer(filename, buffer, &pix[0], true);
+    std::thread thd{ SavePNG, &pix[0], filename, width, height, 3 };
+    thd.join();
+
     double end = sutil::currentTime();
     std::cout << "[info] save_png: " << filename << "\t" << (end - begin) << " sec." << std::endl;
+
+    return thd;
+}
+
+std::thread displayBufferPNG_task(const char* filename, Buffer& buffer, unsigned char* pix)
+{
+    double begin = sutil::currentTime();
+    
+    sutil::getRawImageBuffer(filename, buffer, pix, true);
+    std::thread thd{ SavePNG, pix, filename, width, height, 3 };
+    //thd.join();
+
+    double end = sutil::currentTime();
+    std::cout << "[info] save_png: " << filename << "\t" << (end - begin) << " sec." << std::endl;
+
+    return thd;
 }
 
 int main(int argc, char** argv)
@@ -1536,6 +1575,8 @@ int main(int argc, char** argv)
 #endif
         }
 
+        std::vector<std::thread> threads;
+
         createContext();
 
         if (training_file.length() == 0 && training_file_2.length() != 0)
@@ -1579,6 +1620,8 @@ int main(int argc, char** argv)
             std::cout << "[info] auto_set_sample_per_launch_scale: " << auto_set_sample_per_launch_scale << std::endl;
             std::cout << "[info] last_frame_scale: " << last_frame_scale << std::endl;
             std::cout << "[info] tonemap_exposure: " << tonemap_exposure << std::endl;
+
+            std::vector<unsigned char> pix(width* height * 3);
 
             for (int frame = 0; frame < frame_count; ++frame)
             {
@@ -1650,7 +1693,18 @@ int main(int argc, char** argv)
                         char filename[50];
                         snprintf(filename, sizeof(filename), "%03d.png", frame + 1);
 
-                        displayBufferPNG(filename, denoisedBuffer);
+                        // displayBufferPNG(filename, denoisedBuffer);
+                        //threads.push_back(displayBufferPNG(filename, denoisedBuffer));
+
+                        //for (std::thread& th : threads) {
+                        //    th.join();
+                        //}
+
+                        //threads.clear();
+
+                        auto thd = displayBufferPNG_task(filename, denoisedBuffer, &pix[0]);
+                        thd.join();
+
 
                         if (flag_debug)
                         {
