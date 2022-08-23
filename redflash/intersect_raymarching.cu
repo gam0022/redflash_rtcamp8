@@ -16,6 +16,9 @@ rtDeclareVariable(float3, aabb_min, , );
 rtDeclareVariable(float3, aabb_max, , );
 rtDeclareVariable(float3, texcoord, attribute texcoord, );
 
+// プライマリレイのDepthを利用した高速化用
+rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
+
 float dMenger(float3 z0, float3 offset, float scale) {
     float4 z = make_float4(z0, 1.0);
     for (int n = 0; n < 4; n++) {
@@ -123,6 +126,11 @@ RT_PROGRAM void intersect(int primIdx)
     float eps;
     float t = ray.tmin, d = 0.0;
     float3 p = ray.origin;
+
+    if (current_prd.depth == 0)
+    {
+        t = max(current_prd.distance, t);
+    }
 
     for (int i = 0; i < 300; i++)
     {

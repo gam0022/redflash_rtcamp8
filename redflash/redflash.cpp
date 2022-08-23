@@ -277,6 +277,11 @@ Buffer getNormalBuffer()
     return context["input_normal_buffer"]->getBuffer();
 }
 
+Buffer getLinerDepthBuffer()
+{
+    return context["liner_depth_buffer"]->getBuffer();
+}
+
 
 void destroyContext()
 {
@@ -407,6 +412,9 @@ void createContext()
 
     Buffer liner_buffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
     context["liner_buffer"]->set(liner_buffer);
+
+    Buffer liner_depth_buffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
+    context["liner_depth_buffer"]->set(liner_depth_buffer);
 
     Buffer tonemappedBuffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
     context["tonemapped_buffer"]->set(tonemappedBuffer);
@@ -1276,6 +1284,7 @@ void glutResize(int w, int h)
     sutil::resizeBuffer(getTonemappedBuffer(), width, height);
     sutil::resizeBuffer(getAlbedoBuffer(), width, height);
     sutil::resizeBuffer(getNormalBuffer(), width, height);
+    sutil::resizeBuffer(getLinerDepthBuffer(), width, height);
     sutil::resizeBuffer(denoisedBuffer, width, height);
     postprocessing_needs_init = true;
 
@@ -1635,8 +1644,8 @@ int main(int argc, char** argv)
                 bool finalFrame = false;
                 total_sample = 0;
 
-                // 1回目のサンプリング数は2で決め打ち
-                sample_per_launch = 2;
+                // 1回目のサンプリング数は8で決め打ち
+                sample_per_launch = 8;
 
                 double global_remain_time = time_limit - (frame_start_time - launch_time);
                 int rest_frame = frame_count - frame;
@@ -1656,7 +1665,7 @@ int main(int argc, char** argv)
                     double remain_time = frame_time_limit - used_time;
                     last_time = now;
 
-                    std::cout << "[info] frame:" << frame << "/" << frame_count << "(" << ((double)(frame + 1) / frame_count * 100) << "%)\tloop:" << i 
+                    std::cout << "[info] frame:" << frame << "/" << frame_count << "(" << ((double)(frame + 1) / frame_count * 100) << "%)\tframe:" << i
                         << "\tused_time:" << (now - launch_time) << "/" << time_limit << "(" << ((double)(now - launch_time) / time_limit * 100) << "%)" << std::endl;
 
                     // 1回目の結果から、時間切れしない sample_per_launch を決定する
@@ -1690,7 +1699,7 @@ int main(int argc, char** argv)
                             }
 
                             double end_time = sutil::currentTime();
-                            std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
+                            std::cout << "[info] final_frame\trender_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
                         }
 
 
@@ -1719,11 +1728,14 @@ int main(int argc, char** argv)
 
                             snprintf(filename, sizeof(filename), "%03d_liner.png", frame + 1);
                             displayBufferPNG(filename, getLinerBuffer());
+
+                            snprintf(filename, sizeof(filename), "%03d_depth.png", frame + 1);
+                            displayBufferPNG(filename, getLinerDepthBuffer());
                         }
 
                         total_sample += sample_per_launch;
-                        std::cout << "[info] total_sample: " << total_sample << std::endl;
                         all_frame_total_sample += total_sample;
+                        std::cout << "[info] total_sample: " << total_sample << "\tall_frame_total_sample: " << all_frame_total_sample << std::endl;
                     }
                     else
                     {
@@ -1732,7 +1744,7 @@ int main(int argc, char** argv)
                         commandListWithoutDenoiser->execute();
 
                         double end_time = sutil::currentTime();
-                        std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
+                        std::cout << "[info] test_frame\trender_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
 
                         frame_number++;
                         total_sample += sample_per_launch;
@@ -1744,8 +1756,7 @@ int main(int argc, char** argv)
 
             double finish_time = sutil::currentTime();
             double total_time = finish_time - launch_time;
-            std::cout << "[info] total_time: " << total_time << " sec." << std::endl;
-            std::cout << "[info] all_frame_total_sample: " << all_frame_total_sample << std::endl;
+            std::cout << "[info] Finish!\ttotal_time: " << total_time << " sec.\tall_frame_total_sample: " << all_frame_total_sample << std::endl;
         }
         // インタラクティブモード
         else if (out_file.empty())
@@ -1869,6 +1880,7 @@ int main(int argc, char** argv)
                 displayBufferPNG((out_file + "_original.png").c_str(), getOutputBuffer());
                 displayBufferPNG((out_file + "_albedo.png").c_str(), getAlbedoBuffer());
                 displayBufferPNG((out_file + "_normal.png").c_str(), getNormalBuffer());
+                displayBufferPNG((out_file + "_depth.png").c_str(), getLinerDepthBuffer());
                 displayBufferPNG((out_file + "_liner.png").c_str(), getLinerBuffer());
             }
 
