@@ -1665,7 +1665,7 @@ int main(int argc, char** argv)
                     double remain_time = frame_time_limit - used_time;
                     last_time = now;
 
-                    std::cout << "[info] frame:" << frame << "/" << frame_count << "(" << ((double)(frame + 1) / frame_count * 100) << "%)\tloop:" << i 
+                    std::cout << "[info] frame:" << frame << "/" << frame_count << "(" << ((double)(frame + 1) / frame_count * 100) << "%)\tframe:" << i 
                         << "\tused_time:" << (now - launch_time) << "/" << time_limit << "(" << ((double)(now - launch_time) / time_limit * 100) << "%)" << std::endl;
 
                     // 1‰ñ–Ú‚ÌŒ‹‰Ê‚©‚çAŽžŠÔØ‚ê‚µ‚È‚¢ sample_per_launch ‚ðŒˆ’è‚·‚é
@@ -1699,7 +1699,7 @@ int main(int argc, char** argv)
                             }
 
                             double end_time = sutil::currentTime();
-                            std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
+                            std::cout << "[info] final_frame\trender_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
                         }
 
 
@@ -1734,8 +1734,8 @@ int main(int argc, char** argv)
                         }
 
                         total_sample += sample_per_launch;
-                        std::cout << "[info] total_sample: " << total_sample << "\tall_frame_total_sample: " << all_frame_total_sample << std::endl;
                         all_frame_total_sample += total_sample;
+                        std::cout << "[info] total_sample: " << total_sample << "\tall_frame_total_sample: " << all_frame_total_sample << std::endl;
                     }
                     else
                     {
@@ -1744,7 +1744,7 @@ int main(int argc, char** argv)
                         commandListWithoutDenoiser->execute();
 
                         double end_time = sutil::currentTime();
-                        std::cout << "[info] render_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
+                        std::cout << "[info] test_frame\trender_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
 
                         frame_number++;
                         total_sample += sample_per_launch;
