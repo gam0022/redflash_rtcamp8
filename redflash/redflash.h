@@ -100,6 +100,8 @@ struct PerRayData_pathtrace
     int depth;
     bool done;
     bool specularBounce;
+
+    float z_depth;
 };
 
 struct PerRayData_pathtrace_shadow

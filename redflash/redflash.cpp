@@ -277,6 +277,11 @@ Buffer getNormalBuffer()
     return context["input_normal_buffer"]->getBuffer();
 }
 
+Buffer getLinerDepthBuffer()
+{
+    return context["liner_depth_buffer"]->getBuffer();
+}
+
 
 void destroyContext()
 {
@@ -407,6 +412,9 @@ void createContext()
 
     Buffer liner_buffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
     context["liner_buffer"]->set(liner_buffer);
+
+    Buffer liner_depth_buffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
+    context["liner_depth_buffer"]->set(liner_depth_buffer);
 
     Buffer tonemappedBuffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
     context["tonemapped_buffer"]->set(tonemappedBuffer);
@@ -1276,6 +1284,7 @@ void glutResize(int w, int h)
     sutil::resizeBuffer(getTonemappedBuffer(), width, height);
     sutil::resizeBuffer(getAlbedoBuffer(), width, height);
     sutil::resizeBuffer(getNormalBuffer(), width, height);
+    sutil::resizeBuffer(getLinerDepthBuffer(), width, height);
     sutil::resizeBuffer(denoisedBuffer, width, height);
     postprocessing_needs_init = true;
 
@@ -1719,6 +1728,9 @@ int main(int argc, char** argv)
 
                             snprintf(filename, sizeof(filename), "%03d_liner.png", frame + 1);
                             displayBufferPNG(filename, getLinerBuffer());
+
+                            snprintf(filename, sizeof(filename), "%03d_depth.png", frame + 1);
+                            displayBufferPNG(filename, getLinerDepthBuffer());
                         }
 
                         total_sample += sample_per_launch;
@@ -1869,6 +1881,7 @@ int main(int argc, char** argv)
                 displayBufferPNG((out_file + "_original.png").c_str(), getOutputBuffer());
                 displayBufferPNG((out_file + "_albedo.png").c_str(), getAlbedoBuffer());
                 displayBufferPNG((out_file + "_normal.png").c_str(), getNormalBuffer());
+                displayBufferPNG((out_file + "_depth.png").c_str(), getLinerDepthBuffer());
                 displayBufferPNG((out_file + "_liner.png").c_str(), getLinerBuffer());
             }
 
