@@ -129,7 +129,7 @@ RT_PROGRAM void intersect(int primIdx)
 
     if (current_prd.depth == 0)
     {
-        t = max(current_prd.z_depth, t);
+        t = max(current_prd.distance, t);
     }
 
     for (int i = 0; i < 300; i++)

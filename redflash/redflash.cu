@@ -74,12 +74,12 @@ RT_PROGRAM void pathtrace_camera()
     float3 result = make_float3(0.0f);
     float3 albedo = make_float3(0.0f);
     float3 normal = make_float3(0.0f);
-    float z_depth = 0.0f;
+    float distance = 0.0f;
     unsigned int seed = tea<16>(screen.x * launch_index.y + launch_index.x, total_sample);
 
     if (frame_number > 1)
     {
-        z_depth = liner_depth_buffer[launch_index].x;
+        distance = liner_depth_buffer[launch_index].x;
     }
 
     for (int i = 0; i < sample_per_launch; i++)
@@ -96,7 +96,7 @@ RT_PROGRAM void pathtrace_camera()
         prd.done = false;
         prd.seed = seed;
         prd.depth = 0;
-        prd.z_depth = z_depth;
+        prd.distance = distance;
 
         // Each iteration is a segment of the ray path.  The closest hit will
         // return new segments to be traced here.
@@ -127,7 +127,7 @@ RT_PROGRAM void pathtrace_camera()
 
                 if (i == 0)
                 {
-                    z_depth = prd.z_depth;
+                    distance = prd.distance;
                 }
             }
 
@@ -173,7 +173,7 @@ RT_PROGRAM void pathtrace_camera()
     {
         input_albedo_buffer[launch_index] = make_float4(pixel_albedo, 1.0f);
         input_normal_buffer[launch_index] = make_float4(pixel_normal, 1.0f);
-        liner_depth_buffer[launch_index] = make_float4(z_depth, 0.0f, 0.0f, 1.0f);
+        liner_depth_buffer[launch_index] = make_float4(distance, 0.0f, 0.0f, 1.0f);
     }
 }
 
@@ -209,7 +209,7 @@ RT_PROGRAM void light_closest_hit()
 
     current_prd.albedo = make_float3(0.0f);
     current_prd.normal = ffnormal;
-    current_prd.z_depth = t_hit;
+    current_prd.distance = t_hit;
 
     LightParameter light = sysLightParameters[lightMaterialId];
     float cosTheta = dot(-ray.direction, light.normal);
@@ -320,7 +320,7 @@ RT_PROGRAM void closest_hit()
     current_prd.wo = -ray.direction;
     current_prd.albedo = mat.albedo;
     current_prd.normal = ffnormal;
-    current_prd.z_depth = t_hit;
+    current_prd.distance = t_hit;
 
     // FIXME: Sample‚É‚à‚Á‚Ä‚¢‚­
     current_prd.origin = hitpoint;
