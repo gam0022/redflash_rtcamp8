@@ -1644,8 +1644,8 @@ int main(int argc, char** argv)
                 bool finalFrame = false;
                 total_sample = 0;
 
-                // 1回目のサンプリング数は2で決め打ち
-                sample_per_launch = 2;
+                // 1回目のサンプリング数は8で決め打ち
+                sample_per_launch = 8;
 
                 double global_remain_time = time_limit - (frame_start_time - launch_time);
                 int rest_frame = frame_count - frame;
@@ -1734,7 +1734,7 @@ int main(int argc, char** argv)
                         }
 
                         total_sample += sample_per_launch;
-                        std::cout << "[info] total_sample: " << total_sample << std::endl;
+                        std::cout << "[info] total_sample: " << total_sample << "\tall_frame_total_sample: " << all_frame_total_sample << std::endl;
                         all_frame_total_sample += total_sample;
                     }
                     else
@@ -1756,8 +1756,7 @@ int main(int argc, char** argv)
 
             double finish_time = sutil::currentTime();
             double total_time = finish_time - launch_time;
-            std::cout << "[info] total_time: " << total_time << " sec." << std::endl;
-            std::cout << "[info] all_frame_total_sample: " << all_frame_total_sample << std::endl;
+            std::cout << "[info] Finish!\ttotal_time: " << total_time << " sec.\tall_frame_total_sample: " << all_frame_total_sample << std::endl;
         }
         // インタラクティブモード
         else if (out_file.empty())
