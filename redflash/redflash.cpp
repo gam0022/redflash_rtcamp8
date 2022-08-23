@@ -1665,7 +1665,7 @@ int main(int argc, char** argv)
                     double remain_time = frame_time_limit - used_time;
                     last_time = now;
 
-                    std::cout << "[info] frame:" << frame << "/" << frame_count << "(" << ((double)(frame + 1) / frame_count * 100) << "%)\tframe:" << i 
+                    std::cout << "[info] frame:" << frame << "/" << frame_count << "(" << ((double)(frame + 1) / frame_count * 100) << "%)\tframe:" << i
                         << "\tused_time:" << (now - launch_time) << "/" << time_limit << "(" << ((double)(now - launch_time) / time_limit * 100) << "%)" << std::endl;
 
                     // 1‰ñ–Ú‚ÌŒ‹‰Ê‚©‚çAŽžŠÔØ‚ê‚µ‚È‚¢ sample_per_launch ‚ðŒˆ’è‚·‚é
