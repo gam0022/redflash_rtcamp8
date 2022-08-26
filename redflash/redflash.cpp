@@ -1355,7 +1355,6 @@ std::thread displayBufferPNG_task(const char* filename, Buffer& buffer, unsigned
     
     sutil::getRawImageBuffer(filename, buffer, pix, true);
     std::thread thd{ SavePNG, pix, filename, width, height, 3 };
-    //thd.join();
 
     double end = sutil::currentTime();
     std::cout << "[info] save_png: " << filename << "\t" << (end - begin) << " sec." << std::endl;
