@@ -58,6 +58,9 @@ int width = 1920 / 4;
 int height = 1080 / 4;
 bool use_pbo = true;
 bool flag_debug = false;
+bool flag_animate = false;
+double launch_time;
+double animate_time = 0.0f;
 
 // sampling
 int max_depth = 10;
@@ -733,10 +736,6 @@ void setupCamera()
     camera_fov = 35;
     camera_up = make_float3(0.0f, 1.0f, 0.0f);
 
-    // look at emission
-    camera_eye = make_float3(50.4f, 338.1f, -66.82f);
-    camera_lookat = make_float3(48.49f, 311.32f, 21.44f);
-
     // 少し遠景
     camera_eye = make_float3(13.91f, 166.787f, 413.00f);
     camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
@@ -764,18 +763,18 @@ void setupCamera()
     camera_rotate = Matrix4x4::identity();
 }
 
+// アニメーションの実装
 void updateFrame(float time)
 {
-    // アニメーションを実装する
-
     camera_up = make_float3(0.0f, 1.0f, 0.0f);
-    camera_fov = lerp(35.0f, 1.0f, time / 5.0f);
+    camera_fov = 30.0f;// lerp(35.0f, 1.0f, time / 5.0f);
 
     // Lucyを中心にしたカット2（レイトレ合宿7提出版）
     camera_eye = make_float3(9.55f, 144.84f, 214.05f);
     camera_lookat = make_float3(1.60f, 149.38f, 200.70f);
 
     camera_changed = true;
+    context["time"]->setFloat(time);
 }
 
 
@@ -884,6 +883,9 @@ void glutRun()
 
 void glutDisplay()
 {
+    animate_time = sutil::currentTime() - launch_time;
+    updateFrame(animate_time);
+
     updateCamera();
 
     if (postprocessing_needs_init)
@@ -1002,6 +1004,12 @@ void glutDisplay()
         sutil::displayText(total_sample_text, 10, 80);
     }
     */
+
+    {
+        static char animate_time_text[32];
+        sprintf(animate_time_text, "animate_time:   %7.2f", animate_time);
+        sutil::displayText(animate_time_text, 10, 80);
+    }
 
     {
         static char camera_eye_text[32];
@@ -1364,7 +1372,7 @@ std::thread displayBufferPNG_task(const char* filename, Buffer& buffer, unsigned
 
 int main(int argc, char** argv)
 {
-    double launch_time = sutil::currentTime();
+    launch_time = sutil::currentTime();
 
     std::string out_file;
     int sampleMax = 20;
@@ -1547,6 +1555,10 @@ int main(int argc, char** argv)
         else if (arg == "--debug")
         {
             flag_debug = true;
+        }
+        else if (arg == "--animate")
+        {
+            flag_animate = true;
         }
         else if (arg == "--movie_time")
         {

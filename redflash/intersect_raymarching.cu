@@ -5,6 +5,8 @@
 
 using namespace optix;
 
+rtDeclareVariable(float, time, , );
+
 rtDeclareVariable(float, scene_epsilon, , );
 rtDeclareVariable(float3, geometric_normal, attribute geometric_normal, );
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
@@ -103,7 +105,7 @@ float map(float3 p)
 {
     // return dMenger((p - center) / local_scale, make_float3(1.23, 1.65, 1.45), 2.56) * local_scale;
     // return dMenger((p - center) / local_scale, make_float3(1, 1, 1), 3.1) * local_scale;
-    return dMandelFast((p - center) / local_scale, 2.76, 20) * min(min(local_scale.x, local_scale.y), local_scale.z);
+    return dMandelFast((p - center) / local_scale, 2.76 + time * 0.1, 20) * min(min(local_scale.x, local_scale.y), local_scale.z);
 }
 
 #define calcNormal(p, dFunc, eps) normalize(\
