@@ -708,32 +708,22 @@ void updateGeometryLight(float time)
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
     {
-        auto geo = light_gis[index]->getGeometry();
-
         if (light->lightType == LightType::SPHERE)
         {
+            auto sphere = light_gis[index]->getGeometry();
             auto center = light->position;
             auto radius = light->radius;
 
-            geo["center"]->setFloat(center);
-            geo["radius"]->setFloat(radius);
-            geo["aabb_min"]->setFloat(center - radius);
-            geo["aabb_max"]->setFloat(center + radius);
-
-            light_gis[index]->setGeometry(geo);
-
+            sphere["center"]->setFloat(center);
+            sphere["radius"]->setFloat(radius);
+            sphere["aabb_min"]->setFloat(center - radius);
+            sphere["aabb_max"]->setFloat(center + radius);
         }
 
         ++index;
     }
 
-    // 更新がうまくいかないので毎フレーム作り直す…
-    //m_bufferLightParameters = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_USER);
-    //m_bufferLightParameters->setElementSize(sizeof(LightParameter));
-    //m_bufferLightParameters->setSize(light_parameters.size());
     updateLightParameters(light_parameters);
-    //context["sysNumberOfLights"]->setInt(light_parameters.size());
-    context["sysLightParameters"]->setBuffer(m_bufferLightParameters);
 
     light_group->getAcceleration()->markDirty();
     light_group->getContext()->launch(0, 0, 0);
