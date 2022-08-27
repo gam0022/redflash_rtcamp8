@@ -168,6 +168,14 @@ std::vector<GeometryInstance> light_gis;
 GeometryGroup light_group;
 Group top_group_light;
 
+// WASD移動
+bool is_key_W_pressed = false;
+bool is_key_A_pressed = false;
+bool is_key_S_pressed = false;
+bool is_key_D_pressed = false;
+bool is_key_Q_pressed = false;
+bool is_key_E_pressed = false;
+
 
 //------------------------------------------------------------------------------
 //
@@ -187,6 +195,7 @@ void glutRun();
 
 void glutDisplay();
 void glutKeyboardPress(unsigned char k, int x, int y);
+void glutKeyboardPressUp(unsigned char k, int x, int y);
 void glutMousePress(int button, int state, int x, int y);
 void glutMouseMotion(int x, int y);
 void glutResize(int w, int h);
@@ -374,7 +383,7 @@ GeometryInstance createMesh(
     return mesh.geom_instance;
 }
 
-void setupBSDF(std::vector<std::string> &bsdf_paths)
+void setupBSDF(std::vector<std::string>& bsdf_paths)
 {
     const int bsdf_type_count = bsdf_paths.size();
 
@@ -442,7 +451,7 @@ void createContext()
     trainingDataBuffer = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_UNSIGNED_BYTE, 0);
 
     // Setup programs
-    const char *ptx = sutil::getPtxString(SAMPLE_NAME, "redflash.cu");
+    const char* ptx = sutil::getPtxString(SAMPLE_NAME, "redflash.cu");
 
     context->setEntryPointCount(2);
     context->setRayGenerationProgram(0, context->createProgramFromPTXString(ptx, "pathtrace_camera"));
@@ -567,7 +576,7 @@ void updateMaterialParameters()
     m_bufferMaterialParameters->unmap();
 }
 
-void updateLightParameters(const std::vector<LightParameter> &lightParameters)
+void updateLightParameters(const std::vector<LightParameter>& lightParameters)
 {
     LightParameter* dst = static_cast<LightParameter*>(m_bufferLightParameters->map(0, RT_BUFFER_MAP_WRITE_DISCARD));
     for (size_t i = 0; i < lightParameters.size(); ++i, ++dst) {
@@ -842,10 +851,10 @@ void updateCamera()
         camera_lookat);
     frame_inv = frame.inverse();
     // Apply camera rotation twice to match old SDK behavior
-    const Matrix4x4 trans = frame * camera_rotate*camera_rotate*frame_inv;
+    const Matrix4x4 trans = frame * camera_rotate * camera_rotate * frame_inv;
 
-    camera_eye = make_float3(trans*make_float4(camera_eye, 1.0f));
-    camera_lookat = make_float3(trans*make_float4(camera_lookat, 1.0f));
+    camera_eye = make_float3(trans * make_float4(camera_eye, 1.0f));
+    camera_lookat = make_float3(trans * make_float4(camera_lookat, 1.0f));
     // camera_up     = make_float3( trans*make_float4( camera_up,     0.0f ) );
 
     sutil::calculateCameraVariables(
@@ -914,6 +923,7 @@ void glutRun()
     glutIdleFunc(glutDisplay);
     glutReshapeFunc(glutResize);
     glutKeyboardFunc(glutKeyboardPress);
+    glutKeyboardUpFunc(glutKeyboardPressUp);
     glutMouseFunc(glutMousePress);
     glutMotionFunc(glutMouseMotion);
 
@@ -929,12 +939,34 @@ void glutRun()
 //
 //------------------------------------------------------------------------------
 
+void fpsCameraMove(float3& camera_local_offset, float speed)
+{
+    float4 offset = make_float4(camera_local_offset, 0.0f);
+    offset = frame * offset;
+    float3 offset_v3 = { offset.x, offset.y, offset.z };
+    offset_v3 *= speed;
+    camera_eye += offset_v3;
+    camera_lookat += offset_v3;
+    camera_changed = true;
+}
+
 void glutDisplay()
 {
     animate_time = sutil::currentTime() - launch_time - 2;
 
     // コメントアウトすれば自由カメラになる
     updateFrame(animate_time);
+
+    // FPSカメラ移動
+    {
+        float speed = 5;
+        if (is_key_W_pressed) fpsCameraMove(make_float3(0, 0, -1), speed);
+        if (is_key_A_pressed) fpsCameraMove(make_float3(-1, 0, 0), speed);
+        if (is_key_S_pressed) fpsCameraMove(make_float3(0, 0, 1), speed);
+        if (is_key_D_pressed) fpsCameraMove(make_float3(1, 0, 0), speed);
+        if (is_key_Q_pressed) fpsCameraMove(make_float3(0, -1, 0), speed);
+        if (is_key_E_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
+    }
 
     updateCamera();
 
@@ -1090,13 +1122,42 @@ void glutKeyboardPress(unsigned char k, int x, int y)
 
     switch (k)
     {
-    case('q'):
     case(27): // ESC
     {
         destroyContext();
         exit(0);
     }
+    case('w'):
+    {
+        is_key_W_pressed = true;
+        break;
+    }
+    case('a'):
+    {
+        is_key_A_pressed = true;
+        break;
+    }
     case('s'):
+    {
+        is_key_S_pressed = true;
+        break;
+    }
+    case('d'):
+    {
+        is_key_D_pressed = true;
+        break;
+    }
+    case('q'):
+    {
+        is_key_Q_pressed = true;
+        break;
+    }
+    case('e'):
+    {
+        is_key_E_pressed = true;
+        break;
+    }
+    case('p'):
     {
         Buffer buff;
         bool disableSrgbConversion = true;
@@ -1146,6 +1207,7 @@ void glutKeyboardPress(unsigned char k, int x, int y)
     case('r'):
     {
         flag_debug_render = !flag_debug_render;
+        break;
     }
     case('m'):
     {
@@ -1260,6 +1322,44 @@ void glutKeyboardPress(unsigned char k, int x, int y)
     }
 }
 
+void glutKeyboardPressUp(unsigned char k, int x, int y)
+{
+
+    switch (k)
+    {
+    case('w'):
+    {
+        is_key_W_pressed = false;
+        break;
+    }
+    case('a'):
+    {
+        is_key_A_pressed = false;
+        break;
+    }
+    case('s'):
+    {
+        is_key_S_pressed = false;
+        break;
+    }
+    case('d'):
+    {
+        is_key_D_pressed = false;
+        break;
+    }
+    case('q'):
+    {
+        is_key_Q_pressed = false;
+        break;
+    }
+    case('e'):
+    {
+        is_key_E_pressed = false;
+        break;
+    }
+    }
+}
+
 
 void glutMousePress(int button, int state, int x, int y)
 {
@@ -1285,7 +1385,7 @@ void glutMouseMotion(int x, int y)
             static_cast<float>(height);
         const float dmax = fabsf(dx) > fabs(dy) ? dx : dy;
         const float scale = std::min<float>(dmax, 0.9f);
-        camera_eye = camera_eye + (camera_lookat - camera_eye)*scale;
+        camera_eye = camera_eye + (camera_lookat - camera_eye) * scale;
         camera_changed = true;
     }
     else if (mouse_button == GLUT_LEFT_BUTTON)
@@ -1403,7 +1503,7 @@ std::thread displayBufferPNG(const char* filename, Buffer& buffer)
 std::thread displayBufferPNG_task(const char* filename, Buffer& buffer, unsigned char* pix)
 {
     double begin = sutil::currentTime();
-    
+
     sutil::getRawImageBuffer(filename, buffer, pix, true);
     std::thread thd{ SavePNG, pix, filename, width, height, 3 };
 
@@ -1683,7 +1783,7 @@ int main(int argc, char** argv)
             std::vector<std::thread> threads;
 
             // 画像の非同期保存のためのバッファ
-            std::vector<unsigned char> pix(width* height * 3);
+            std::vector<unsigned char> pix(width * height * 3);
 
             for (int frame = 0; frame < frame_count; ++frame)
             {
