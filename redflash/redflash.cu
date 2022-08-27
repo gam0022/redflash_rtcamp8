@@ -178,7 +178,7 @@ RT_PROGRAM void pathtrace_camera()
 }
 
 // シーンのデバッグ用の軽量レンダラー
-RT_PROGRAM void pathtrace_camera_debug()
+RT_PROGRAM void debug_camera()
 {
     size_t2 screen = output_buffer.size();
     float3 result = make_float3(0.0f);

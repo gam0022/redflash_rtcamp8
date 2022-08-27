@@ -446,7 +446,7 @@ void createContext()
 
     context->setEntryPointCount(2);
     context->setRayGenerationProgram(0, context->createProgramFromPTXString(ptx, "pathtrace_camera"));
-    context->setRayGenerationProgram(1, context->createProgramFromPTXString(ptx, "pathtrace_camera_debug"));
+    context->setRayGenerationProgram(1, context->createProgramFromPTXString(ptx, "debug_camera"));
 
     context->setExceptionProgram(0, context->createProgramFromPTXString(ptx, "exception"));
     context->setMissProgram(0, context->createProgramFromPTXString(ptx, "envmap_miss"));
