@@ -58,6 +58,7 @@ int width = 1920 / 4;
 int height = 1080 / 4;
 bool use_pbo = true;
 bool flag_debug = false;
+bool flag_debug_render = false;
 double launch_time;
 double animate_time = 0.0f;
 
@@ -442,7 +443,11 @@ void createContext()
 
     // Setup programs
     const char *ptx = sutil::getPtxString(SAMPLE_NAME, "redflash.cu");
+
+    context->setEntryPointCount(2);
     context->setRayGenerationProgram(0, context->createProgramFromPTXString(ptx, "pathtrace_camera"));
+    context->setRayGenerationProgram(1, context->createProgramFromPTXString(ptx, "debug_camera"));
+
     context->setExceptionProgram(0, context->createProgramFromPTXString(ptx, "exception"));
     context->setMissProgram(0, context->createProgramFromPTXString(ptx, "envmap_miss"));
     context["bad_color"]->setFloat(1000000.0f, 0.0f, 1000000.0f); // Super magenta to make sure it doesn't get averaged out in the progressive rendering.
@@ -802,14 +807,17 @@ void setupCamera()
 // アニメーションの実装
 void updateFrame(float time)
 {
-    camera_up = make_float3(0.0f, 1.0f, 0.0f);
-    camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
+    if (false)
+    {
+        camera_up = make_float3(0.0f, 1.0f, 0.0f);
+        camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
 
-    //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
-    //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
+        //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
+        //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
 
-    camera_eye = make_float3(1.65f, 196.01f, 287.97f);
-    camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
+        camera_eye = make_float3(1.65f, 196.01f, 287.97f);
+        camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
+    }
 
     updateGeometryLight(time);
 
@@ -938,16 +946,24 @@ void glutDisplay()
     Variable(denoiserStage->queryVariable("blend"))->setFloat(denoiseBlend);
 
     bool isEarlyFrame = (frame_number <= numNonDenoisedFrames);
-    if (isEarlyFrame)
-    {
-        // NOTE: commandList を使わない場合
-        // context->launch( 0, width, height );
 
-        commandListWithoutDenoiser->execute();
+    if (flag_debug_render)
+    {
+        context->launch(1, width, height);
     }
     else
     {
-        commandListWithDenoiser->execute();
+        if (isEarlyFrame)
+        {
+            // NOTE: commandList を使わない場合
+            // context->launch( 0, width, height );
+
+            commandListWithoutDenoiser->execute();
+        }
+        else
+        {
+            commandListWithDenoiser->execute();
+        }
     }
 
     switch (showBuffer)
@@ -1121,30 +1137,15 @@ void glutKeyboardPress(unsigned char k, int x, int y)
         sutil::displayBufferPNG(outputImage.c_str(), getOutputBuffer(), false);
         break;
     }
-    case('d'):
+    case('b'):
     {
-        showBuffer = 0;
+        showBuffer++;
+        if (showBuffer > 5) showBuffer = 1;
         break;
     }
-    case('o'):
+    case('r'):
     {
-        showBuffer = 1;
-        break;
-    }
-    case('t'):
-    {
-        showBuffer = 2;
-        break;
-    }
-    case('a'):
-    {
-        showBuffer = 3;
-        break;
-    }
-    case('n'):
-    {
-        showBuffer = 4;
-        break;
+        flag_debug_render = !flag_debug_render;
     }
     case('m'):
     {

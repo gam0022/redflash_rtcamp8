@@ -177,6 +177,35 @@ RT_PROGRAM void pathtrace_camera()
     }
 }
 
+// シーンのデバッグ用の軽量レンダラー
+RT_PROGRAM void debug_camera()
+{
+    size_t2 screen = output_buffer.size();
+    float3 result = make_float3(0.0f);
+    float3 light_dir = normalize(make_float3(1, 1, 1));
+
+    float2 d = make_float2(launch_index) / make_float2(screen) * 2.f - 1.f;
+    float3 ray_origin = eye;
+    float3 ray_direction = normalize(d.x * U + d.y * V + W);
+
+    // Initialze per-ray data
+    PerRayData_pathtrace prd;
+    prd.radiance = make_float3(0.0f);
+    prd.attenuation = make_float3(1.0f);
+    prd.done = false;
+    prd.seed = 0;
+    prd.depth = 0;
+    prd.distance = 0;
+
+    Ray ray = make_Ray(ray_origin, ray_direction, RADIANCE_RAY_TYPE, scene_epsilon, RT_DEFAULT_MAX);
+    prd.wo = -ray.direction;
+    rtTrace(top_object, ray, prd);
+
+    result = (0.5 * saturate(dot(prd.normal, light_dir)) + 0.5) * prd.albedo;
+
+    output_buffer[launch_index] = make_float4(result, 1.0);
+}
+
 
 //-----------------------------------------------------------------------------
 //
