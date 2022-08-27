@@ -58,6 +58,8 @@ int width = 1920 / 4;
 int height = 1080 / 4;
 bool use_pbo = true;
 bool flag_debug = false;
+double launch_time;
+double animate_time = 0.0f;
 
 // sampling
 int max_depth = 10;
@@ -156,6 +158,14 @@ Matrix4x4 frame_inv;
 // Mouse state
 int2           mouse_prev_pos;
 int            mouse_button;
+
+// Scene
+
+// Lightを動的にアップデートするための参照
+std::vector<LightParameter> light_parameters;
+std::vector<GeometryInstance> light_gis;
+GeometryGroup light_group;
+Group top_group_light;
 
 
 //------------------------------------------------------------------------------
@@ -628,10 +638,6 @@ GeometryGroup createGeometry()
 
 GeometryGroup createGeometryLight()
 {
-    // Light
-    std::vector<LightParameter> lightParameters;
-    std::vector<GeometryInstance> gis;
-
     /*{
         LightParameter light;
         light.lightType = SPHERE;
@@ -647,57 +653,90 @@ GeometryGroup createGeometryLight()
         light.position = make_float3(0.01f, 166.787f, 190.00f);
         light.radius = 2.0f;
         light.emission = make_float3(20.0f, 10.00f, 5.00f);
-        lightParameters.push_back(light);
+        light_parameters.push_back(light);
     }
 
     {
         LightParameter light;
         light.lightType = SPHERE;
 
-        float3 target = make_float3(0.0f, 144.5f, 198.0f);
+        float3 target = make_float3(9.8f, 144.5f, 198.0f);
 
         light.position = target + make_float3(-120.0f, 338.0f, 53.0f) * 0.05;
         light.radius = 3.0f;
         light.emission = make_float3(10.0f, 10.00f, 10.00f);
-        lightParameters.push_back(light);
+        light_parameters.push_back(light);
     }
 
     int index = 0;
-    for (auto light = lightParameters.begin(); light != lightParameters.end(); ++light)
+    for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
     {
         light->area = 4.0f * M_PIf * light->radius * light->radius;
         light->normal = optix::normalize(light->normal);
 
-        gis.push_back(createSphereObject(light->position, light->radius));
-        gis.back()["lightMaterialId"]->setInt(index);
+        light_gis.push_back(createSphereObject(light->position, light->radius));
+        light_gis.back()["lightMaterialId"]->setInt(index);
 
         MaterialParameter mat;
         mat.emission = light->emission;
-        registerMaterial(gis.back(), mat, true);
+        registerMaterial(light_gis.back(), mat, true);
 
         ++index;
     }
 
     // Create geometry group
-    GeometryGroup light_group = context->createGeometryGroup(gis.begin(), gis.end());
+    GeometryGroup light_group = context->createGeometryGroup(light_gis.begin(), light_gis.end());
     light_group->setAcceleration(context->createAcceleration("Trbvh"));
 
     // Create sysLightParameters
     m_bufferLightParameters = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_USER);
     m_bufferLightParameters->setElementSize(sizeof(LightParameter));
-    m_bufferLightParameters->setSize(lightParameters.size());
-    updateLightParameters(lightParameters);
-    context["sysNumberOfLights"]->setInt(lightParameters.size());
+    m_bufferLightParameters->setSize(light_parameters.size());
+    updateLightParameters(light_parameters);
+    context["sysNumberOfLights"]->setInt(light_parameters.size());
     context["sysLightParameters"]->setBuffer(m_bufferLightParameters);
 
     return light_group;
+}
+
+void updateGeometryLight(float time)
+{
+    light_parameters[0].position.y = 166.787f + time * 12.5f;
+    light_parameters[1].position.x = -6 + time * 100.0f;
+    light_parameters[1].radius = 2.0f + 3.0 * time;
+
+    int index = 0;
+    for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
+    {
+        if (light->lightType == LightType::SPHERE)
+        {
+            auto sphere = light_gis[index]->getGeometry();
+            auto center = light->position;
+            auto radius = light->radius;
+
+            sphere["center"]->setFloat(center);
+            sphere["radius"]->setFloat(radius);
+            sphere["aabb_min"]->setFloat(center - radius);
+            sphere["aabb_max"]->setFloat(center + radius);
+        }
+
+        ++index;
+    }
+
+    updateLightParameters(light_parameters);
+
+    light_group->getAcceleration()->markDirty();
+    light_group->getContext()->launch(0, 0, 0);
+
+    top_group_light->getAcceleration()->markDirty();
+    top_group_light->getContext()->launch(0, 0, 0);
 }
 
 void setupScene()
 {
     GeometryGroup tri_gg = createGeometryTriangles();
     GeometryGroup gg = createGeometry();
-    GeometryGroup light_gg = createGeometryLight();
+    light_group = createGeometryLight();
 
     Group top_group = context->createGroup();
     top_group->setAcceleration(context->createAcceleration("Trbvh"));
@@ -705,11 +744,11 @@ void setupScene()
     top_group->addChild(tri_gg);
     context["top_shadower"]->set(top_group);
 
-    Group top_group_light = context->createGroup();
+    top_group_light = context->createGroup();
     top_group_light->setAcceleration(context->createAcceleration("Trbvh"));
     top_group_light->addChild(gg);
     top_group_light->addChild(tri_gg);
-    top_group_light->addChild(light_gg);
+    top_group_light->addChild(light_group);
     context["top_object"]->set(top_group_light);
 
     // Envmap
@@ -733,10 +772,6 @@ void setupCamera()
     camera_fov = 35;
     camera_up = make_float3(0.0f, 1.0f, 0.0f);
 
-    // look at emission
-    camera_eye = make_float3(50.4f, 338.1f, -66.82f);
-    camera_lookat = make_float3(48.49f, 311.32f, 21.44f);
-
     // 少し遠景
     camera_eye = make_float3(13.91f, 166.787f, 413.00f);
     camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
@@ -746,12 +781,12 @@ void setupCamera()
     camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
     // Lucyを中心にしたカット
-    camera_eye = make_float3(0.73f, 160.33f, 220.03f);
-    camera_lookat = make_float3(0.37f, 149.31f, 201.70f);
+    //camera_eye = make_float3(0.73f, 160.33f, 220.03f);
+    //camera_lookat = make_float3(0.37f, 149.31f, 201.70f);
 
     // Lucyを中心にしたカット2（レイトレ合宿7提出版）
-    camera_eye = make_float3(9.55f, 144.84f, 214.05f);
-    camera_lookat = make_float3(1.60f, 149.38f, 200.70f);
+    //camera_eye = make_float3(9.55f, 144.84f, 214.05f);
+    //camera_lookat = make_float3(1.60f, 149.38f, 200.70f);
 
     // Lucyを中心にしたカット3
     //camera_eye = make_float3(9.08f, 150.98f, 210.78f);
@@ -764,18 +799,22 @@ void setupCamera()
     camera_rotate = Matrix4x4::identity();
 }
 
+// アニメーションの実装
 void updateFrame(float time)
 {
-    // アニメーションを実装する
-
     camera_up = make_float3(0.0f, 1.0f, 0.0f);
-    camera_fov = lerp(35.0f, 1.0f, time / 5.0f);
+    camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
 
-    // Lucyを中心にしたカット2（レイトレ合宿7提出版）
-    camera_eye = make_float3(9.55f, 144.84f, 214.05f);
-    camera_lookat = make_float3(1.60f, 149.38f, 200.70f);
+    //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
+    //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
+
+    camera_eye = make_float3(1.65f, 196.01f, 287.97f);
+    camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
+
+    updateGeometryLight(time);
 
     camera_changed = true;
+    context["time"]->setFloat(time);
 }
 
 
@@ -884,6 +923,11 @@ void glutRun()
 
 void glutDisplay()
 {
+    animate_time = sutil::currentTime() - launch_time - 2;
+
+    // コメントアウトすれば自由カメラになる
+    updateFrame(animate_time);
+
     updateCamera();
 
     if (postprocessing_needs_init)
@@ -1002,6 +1046,12 @@ void glutDisplay()
         sutil::displayText(total_sample_text, 10, 80);
     }
     */
+
+    {
+        static char animate_time_text[32];
+        sprintf(animate_time_text, "animate_time:   %7.2f", animate_time);
+        sutil::displayText(animate_time_text, 10, 80);
+    }
 
     {
         static char camera_eye_text[32];
@@ -1355,7 +1405,6 @@ std::thread displayBufferPNG_task(const char* filename, Buffer& buffer, unsigned
     
     sutil::getRawImageBuffer(filename, buffer, pix, true);
     std::thread thd{ SavePNG, pix, filename, width, height, 3 };
-    //thd.join();
 
     double end = sutil::currentTime();
     std::cout << "[info] save_png: " << filename << "\t" << (end - begin) << " sec." << std::endl;
@@ -1365,7 +1414,7 @@ std::thread displayBufferPNG_task(const char* filename, Buffer& buffer, unsigned
 
 int main(int argc, char** argv)
 {
-    double launch_time = sutil::currentTime();
+    launch_time = sutil::currentTime();
 
     std::string out_file;
     int sampleMax = 20;
@@ -1686,17 +1735,7 @@ int main(int argc, char** argv)
                         {
                             double begin_time = sutil::currentTime();
 
-                            if (denoiser_perf_mode)
-                            {
-                                for (int i = 0; i < denoiser_perf_iter; i++)
-                                {
-                                    commandListWithDenoiser->execute();
-                                }
-                            }
-                            else
-                            {
-                                commandListWithDenoiser->execute();
-                            }
+                            commandListWithDenoiser->execute();
 
                             double end_time = sutil::currentTime();
                             std::cout << "[info] final_frame\trender_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
