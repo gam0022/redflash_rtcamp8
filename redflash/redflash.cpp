@@ -959,13 +959,13 @@ void glutDisplay()
 
     // FPSƒJƒƒ‰ˆÚ“®
     {
-        float speed = 10;
+        float speed = 5;
         if (is_key_W_pressed) fpsCameraMove(make_float3(0, 0, -1), speed);
         if (is_key_A_pressed) fpsCameraMove(make_float3(-1, 0, 0), speed);
         if (is_key_S_pressed) fpsCameraMove(make_float3(0, 0, 1), speed);
         if (is_key_D_pressed) fpsCameraMove(make_float3(1, 0, 0), speed);
-        if (is_key_Q_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
-        if (is_key_E_pressed) fpsCameraMove(make_float3(0, -1, 0), speed);
+        if (is_key_Q_pressed) fpsCameraMove(make_float3(0, -1, 0), speed);
+        if (is_key_E_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
     }
 
     updateCamera();
