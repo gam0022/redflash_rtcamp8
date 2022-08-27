@@ -374,7 +374,7 @@ GeometryInstance createMesh(
     return mesh.geom_instance;
 }
 
-void setupBSDF(std::vector<std::string> &bsdf_paths)
+void setupBSDF(std::vector<std::string>& bsdf_paths)
 {
     const int bsdf_type_count = bsdf_paths.size();
 
@@ -442,7 +442,7 @@ void createContext()
     trainingDataBuffer = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_UNSIGNED_BYTE, 0);
 
     // Setup programs
-    const char *ptx = sutil::getPtxString(SAMPLE_NAME, "redflash.cu");
+    const char* ptx = sutil::getPtxString(SAMPLE_NAME, "redflash.cu");
 
     context->setEntryPointCount(2);
     context->setRayGenerationProgram(0, context->createProgramFromPTXString(ptx, "pathtrace_camera"));
@@ -567,7 +567,7 @@ void updateMaterialParameters()
     m_bufferMaterialParameters->unmap();
 }
 
-void updateLightParameters(const std::vector<LightParameter> &lightParameters)
+void updateLightParameters(const std::vector<LightParameter>& lightParameters)
 {
     LightParameter* dst = static_cast<LightParameter*>(m_bufferLightParameters->map(0, RT_BUFFER_MAP_WRITE_DISCARD));
     for (size_t i = 0; i < lightParameters.size(); ++i, ++dst) {
@@ -842,10 +842,10 @@ void updateCamera()
         camera_lookat);
     frame_inv = frame.inverse();
     // Apply camera rotation twice to match old SDK behavior
-    const Matrix4x4 trans = frame * camera_rotate*camera_rotate*frame_inv;
+    const Matrix4x4 trans = frame * camera_rotate * camera_rotate * frame_inv;
 
-    camera_eye = make_float3(trans*make_float4(camera_eye, 1.0f));
-    camera_lookat = make_float3(trans*make_float4(camera_lookat, 1.0f));
+    camera_eye = make_float3(trans * make_float4(camera_eye, 1.0f));
+    camera_lookat = make_float3(trans * make_float4(camera_lookat, 1.0f));
     // camera_up     = make_float3( trans*make_float4( camera_up,     0.0f ) );
 
     sutil::calculateCameraVariables(
@@ -1285,7 +1285,7 @@ void glutMouseMotion(int x, int y)
             static_cast<float>(height);
         const float dmax = fabsf(dx) > fabs(dy) ? dx : dy;
         const float scale = std::min<float>(dmax, 0.9f);
-        camera_eye = camera_eye + (camera_lookat - camera_eye)*scale;
+        camera_eye = camera_eye + (camera_lookat - camera_eye) * scale;
         camera_changed = true;
     }
     else if (mouse_button == GLUT_LEFT_BUTTON)
@@ -1403,7 +1403,7 @@ std::thread displayBufferPNG(const char* filename, Buffer& buffer)
 std::thread displayBufferPNG_task(const char* filename, Buffer& buffer, unsigned char* pix)
 {
     double begin = sutil::currentTime();
-    
+
     sutil::getRawImageBuffer(filename, buffer, pix, true);
     std::thread thd{ SavePNG, pix, filename, width, height, 3 };
 
@@ -1683,7 +1683,7 @@ int main(int argc, char** argv)
             std::vector<std::thread> threads;
 
             // 画像の非同期保存のためのバッファ
-            std::vector<unsigned char> pix(width* height * 3);
+            std::vector<unsigned char> pix(width * height * 3);
 
             for (int frame = 0; frame < frame_count; ++frame)
             {

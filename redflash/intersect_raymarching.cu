@@ -73,7 +73,7 @@ float3 get_xyz(float4 p)
 }
 
 // not work...
-void set_xyz(float4 &a, float3 b)
+void set_xyz(float4& a, float3 b)
 {
     a.x = b.x;
     a.y = b.y;
