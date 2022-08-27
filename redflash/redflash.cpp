@@ -58,7 +58,6 @@ int width = 1920 / 4;
 int height = 1080 / 4;
 bool use_pbo = true;
 bool flag_debug = false;
-bool flag_animate = false;
 double launch_time;
 double animate_time = 0.0f;
 
@@ -1608,10 +1607,6 @@ int main(int argc, char** argv)
         else if (arg == "--debug")
         {
             flag_debug = true;
-        }
-        else if (arg == "--animate")
-        {
-            flag_animate = true;
         }
         else if (arg == "--movie_time")
         {
