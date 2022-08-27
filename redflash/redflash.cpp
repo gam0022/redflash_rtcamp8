@@ -173,7 +173,8 @@ bool is_key_W_pressed = false;
 bool is_key_A_pressed = false;
 bool is_key_S_pressed = false;
 bool is_key_D_pressed = false;
-
+bool is_key_Q_pressed = false;
+bool is_key_E_pressed = false;
 
 
 //------------------------------------------------------------------------------
@@ -956,12 +957,15 @@ void glutDisplay()
     // コメントアウトすれば自由カメラになる
     updateFrame(animate_time);
 
+    // FPSカメラ移動
     {
         float speed = 10;
         if (is_key_W_pressed) fpsCameraMove(make_float3(0, 0, -1), speed);
         if (is_key_A_pressed) fpsCameraMove(make_float3(-1, 0, 0), speed);
         if (is_key_S_pressed) fpsCameraMove(make_float3(0, 0, 1), speed);
         if (is_key_D_pressed) fpsCameraMove(make_float3(1, 0, 0), speed);
+        if (is_key_Q_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
+        if (is_key_E_pressed) fpsCameraMove(make_float3(0, -1, 0), speed);
     }
 
     updateCamera();
@@ -1118,7 +1122,6 @@ void glutKeyboardPress(unsigned char k, int x, int y)
 
     switch (k)
     {
-    case('q'):
     case(27): // ESC
     {
         destroyContext();
@@ -1142,6 +1145,16 @@ void glutKeyboardPress(unsigned char k, int x, int y)
     case('d'):
     {
         is_key_D_pressed = true;
+        break;
+    }
+    case('q'):
+    {
+        is_key_Q_pressed = true;
+        break;
+    }
+    case('e'):
+    {
+        is_key_E_pressed = true;
         break;
     }
     case('p'):
@@ -1332,6 +1345,16 @@ void glutKeyboardPressUp(unsigned char k, int x, int y)
     case('d'):
     {
         is_key_D_pressed = false;
+        break;
+    }
+    case('q'):
+    {
+        is_key_Q_pressed = false;
+        break;
+    }
+    case('e'):
+    {
+        is_key_E_pressed = false;
         break;
     }
     }
