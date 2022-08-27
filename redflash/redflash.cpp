@@ -166,6 +166,7 @@ int            mouse_button;
 std::vector<LightParameter> light_parameters;
 std::vector<GeometryInstance> light_gis;
 GeometryGroup light_group;
+Group top_group_light;
 
 
 //------------------------------------------------------------------------------
@@ -660,7 +661,7 @@ GeometryGroup createGeometryLight()
         LightParameter light;
         light.lightType = SPHERE;
 
-        float3 target = make_float3(0.0f, 144.5f, 198.0f);
+        float3 target = make_float3(9.8f, 144.5f, 198.0f);
 
         light.position = target + make_float3(-120.0f, 338.0f, 53.0f) * 0.05;
         light.radius = 3.0f;
@@ -685,7 +686,7 @@ GeometryGroup createGeometryLight()
     }
 
     // Create geometry group
-    light_group = context->createGeometryGroup(light_gis.begin(), light_gis.end());
+    GeometryGroup light_group = context->createGeometryGroup(light_gis.begin(), light_gis.end());
     light_group->setAcceleration(context->createAcceleration("Trbvh"));
 
     // Create sysLightParameters
@@ -701,26 +702,52 @@ GeometryGroup createGeometryLight()
 
 void updateGeometryLight(float time)
 {
-    light_parameters[0].position.y = 166.787f + time * 0.5f;
-    light_parameters[1].position.y = 144.5f + 338.0f - time * 0.5f;
+    light_parameters[0].position.y = 166.787f + time * 12.5f;
+    light_parameters[1].position.x = -6 + time * 100.0f;
+    light_parameters[1].radius = 2.0f + 3.0 * time;
 
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
     {
-        auto geo = light_gis[index].get()->getGeometry();
-        geo["center"]->setFloat(light->position);
+        auto geo = light_gis[index]->getGeometry();
+
+        if (light->lightType == LightType::SPHERE)
+        {
+            auto center = light->position;
+            auto radius = light->radius;
+
+            geo["center"]->setFloat(center);
+            geo["radius"]->setFloat(radius);
+            geo["aabb_min"]->setFloat(center - radius);
+            geo["aabb_max"]->setFloat(center + radius);
+
+            light_gis[index]->setGeometry(geo);
+
+        }
+
         ++index;
     }
 
+    // 更新がうまくいかないので毎フレーム作り直す…
+    //m_bufferLightParameters = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_USER);
+    //m_bufferLightParameters->setElementSize(sizeof(LightParameter));
+    //m_bufferLightParameters->setSize(light_parameters.size());
+    updateLightParameters(light_parameters);
+    //context["sysNumberOfLights"]->setInt(light_parameters.size());
+    context["sysLightParameters"]->setBuffer(m_bufferLightParameters);
+
     light_group->getAcceleration()->markDirty();
     light_group->getContext()->launch(0, 0, 0);
+
+    top_group_light->getAcceleration()->markDirty();
+    top_group_light->getContext()->launch(0, 0, 0);
 }
 
 void setupScene()
 {
     GeometryGroup tri_gg = createGeometryTriangles();
     GeometryGroup gg = createGeometry();
-    GeometryGroup light_gg = createGeometryLight();
+    light_group = createGeometryLight();
 
     Group top_group = context->createGroup();
     top_group->setAcceleration(context->createAcceleration("Trbvh"));
@@ -728,11 +755,11 @@ void setupScene()
     top_group->addChild(tri_gg);
     context["top_shadower"]->set(top_group);
 
-    Group top_group_light = context->createGroup();
+    top_group_light = context->createGroup();
     top_group_light->setAcceleration(context->createAcceleration("Trbvh"));
     top_group_light->addChild(gg);
     top_group_light->addChild(tri_gg);
-    top_group_light->addChild(light_gg);
+    top_group_light->addChild(light_group);
     context["top_object"]->set(top_group_light);
 
     // Envmap
@@ -765,12 +792,12 @@ void setupCamera()
     camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
     // Lucyを中心にしたカット
-    camera_eye = make_float3(0.73f, 160.33f, 220.03f);
-    camera_lookat = make_float3(0.37f, 149.31f, 201.70f);
+    //camera_eye = make_float3(0.73f, 160.33f, 220.03f);
+    //camera_lookat = make_float3(0.37f, 149.31f, 201.70f);
 
     // Lucyを中心にしたカット2（レイトレ合宿7提出版）
-    camera_eye = make_float3(9.55f, 144.84f, 214.05f);
-    camera_lookat = make_float3(1.60f, 149.38f, 200.70f);
+    //camera_eye = make_float3(9.55f, 144.84f, 214.05f);
+    //camera_lookat = make_float3(1.60f, 149.38f, 200.70f);
 
     // Lucyを中心にしたカット3
     //camera_eye = make_float3(9.08f, 150.98f, 210.78f);
@@ -787,10 +814,13 @@ void setupCamera()
 void updateFrame(float time)
 {
     camera_up = make_float3(0.0f, 1.0f, 0.0f);
-    camera_fov = 30.0f;// lerp(35.0f, 1.0f, time / 5.0f);
+    camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
 
-    camera_eye = make_float3(13.91f, 166.787f, 413.00f);
-    camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
+    //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
+    //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
+
+    camera_eye = make_float3(1.65f, 196.01f, 287.97f);
+    camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
     updateGeometryLight(time);
 
@@ -904,7 +934,7 @@ void glutRun()
 
 void glutDisplay()
 {
-    animate_time = sutil::currentTime() - launch_time;
+    animate_time = sutil::currentTime() - launch_time - 2;
 
     // コメントアウトすれば自由カメラになる
     updateFrame(animate_time);
@@ -1720,17 +1750,7 @@ int main(int argc, char** argv)
                         {
                             double begin_time = sutil::currentTime();
 
-                            if (denoiser_perf_mode)
-                            {
-                                for (int i = 0; i < denoiser_perf_iter; i++)
-                                {
-                                    commandListWithDenoiser->execute();
-                                }
-                            }
-                            else
-                            {
-                                commandListWithDenoiser->execute();
-                            }
+                            commandListWithDenoiser->execute();
 
                             double end_time = sutil::currentTime();
                             std::cout << "[info] final_frame\trender_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
