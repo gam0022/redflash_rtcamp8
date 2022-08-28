@@ -201,7 +201,7 @@ RT_PROGRAM void debug_camera()
     prd.wo = -ray.direction;
     rtTrace(top_object, ray, prd);
 
-    result = (0.5 * saturate(dot(prd.normal, light_dir)) + 0.5) * prd.albedo;
+    result = (0.5 * saturate(dot(prd.normal, light_dir)) + 0.5) * prd.albedo + prd.radiance;
 
     output_buffer[launch_index] = make_float4(result, 1.0);
 }
