@@ -728,7 +728,7 @@ void updateGeometryLight(float time)
 {
     light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
 
-    light_parameters[1].position = camera_lookat + 3 * sinFbm3(0.3 * time);
+    light_parameters[1].position = camera_lookat + 1 * sinFbm3(0.3 * time);
     //light_parameters[1].radius = 2.0f + sin(time + 4);
 
     int index = 0;
@@ -822,6 +822,9 @@ void setupCamera()
     //camera_eye = make_float3(-815.63f, -527.19f, -674.00f);
     //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
+    camera_eye = make_float3(0, 0, 0);
+    camera_lookat = make_float3(0, 0, -30.0f);
+
     camera_rotate = Matrix4x4::identity();
 }
 
@@ -839,7 +842,9 @@ void updateFrame(float time)
         //camera_eye = make_float3(1.65f, 196.01f, 287.97f);
         //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
-        camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
+        // camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
+        camera_lookat = make_float3(0.0f, 0.0, 290.4f - 5 * time);
+
         camera_eye = camera_lookat + make_float3(0.0f, 0.0f, 30.0f);
     }
 

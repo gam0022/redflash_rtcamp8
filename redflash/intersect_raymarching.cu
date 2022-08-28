@@ -100,13 +100,32 @@ float dMandelFast(float3 p, float scale, int n) {
     return length(get_xyz(q)) / abs(q.w);
 }
 
+float fracf(float x)
+{
+    return x - floor(x);
+}
+
+float mod(float a, float b)
+{
+    return fracf(abs(a / b)) * abs(b);
+}
+
+float opRep(float p, float interval)
+{
+    return mod(p, interval) - interval * 0.5;
+}
+
 float map(float3 p)
 {
-    // return dMenger((p - center) / local_scale, make_float3(1.23, 1.65, 1.45), 2.56) * local_scale;
-    // return dMenger((p - center) / local_scale, make_float3(1, 1, 1), 3.1) * local_scale;
+    // return dMenger((p - center) / scale, make_float3(1.23, 1.65, 1.45), 2.56) * scale;
+    // return dMenger((p - center) / scale, make_float3(1, 1, 1), 3.1) * scale;
 
-    float scale = 69.7674418605f;
-    return dMandelFast((p - center) / scale, 2.76 + time * 0.01 * sin(time), 20) * scale;
+    // float scale = 69.7674418605f;
+    // return dMandelFast((p - center) / scale, 2.76 + time * 0.01 * sin(time), 20) * scale;
+
+    p.z = opRep(p.z, 20.0);
+    float scale = 10;
+    return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2), 2.8) * scale;
 }
 
 #define calcNormal(p, dFunc, eps) normalize(\
