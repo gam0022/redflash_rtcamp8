@@ -125,7 +125,7 @@ float map(float3 p)
 
     p.z = opRep(p.z, 20.0);
     float scale = 10;
-    return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2), 2.8) * scale;
+    return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2 + 0.6 * sin(time)), 2.8 + 0.1 * sin(time)) * scale;
 }
 
 #define calcNormal(p, dFunc, eps) normalize(\

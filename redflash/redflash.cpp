@@ -843,9 +843,9 @@ void updateFrame(float time)
         //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
         // camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
-        camera_lookat = make_float3(0.0f, 0.0, 290.4f - 5 * time);
+        camera_lookat = make_float3(0.0f, 0.0, 290.4f - 10 * time);
 
-        camera_eye = camera_lookat + make_float3(0.0f, 0.0f, 30.0f);
+        camera_eye = camera_lookat + make_float3(1.0f * sin(time), 1.0f * cos(time), 30.0f * cos(time * 0.5)) + 0.1 * sinFbm3(0.1 * time);
     }
 
     updateGeometryLight(time);
@@ -1814,8 +1814,8 @@ int main(int argc, char** argv)
                 bool finalFrame = false;
                 total_sample = 0;
 
-                // 1回目のサンプリング数は8で決め打ち
-                sample_per_launch = 8;
+                // 1回目のサンプリング数は3で決め打ち
+                sample_per_launch = 3;
 
                 double global_remain_time = time_limit - (frame_start_time - launch_time);
                 int rest_frame = frame_count - frame;
