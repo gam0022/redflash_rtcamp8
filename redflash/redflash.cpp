@@ -662,11 +662,12 @@ GeometryGroup createGeometryLight()
     }*/
 
     {
+        // ÉJÉÅÉâÇÃîwå„ÇÃÉâÉCÉg
         LightParameter light;
         light.lightType = SPHERE;
-        light.position = make_float3(0.01f, 166.787f, 190.00f);
-        light.radius = 2.0f;
-        light.emission = make_float3(20.0f, 10.00f, 5.00f);
+        light.position = make_float3(0.0f, 9999.0f, 0.0f);
+        light.radius = 3.0f;
+        light.emission = make_float3(100.0f, 1.00f, 1.00f);
         light_parameters.push_back(light);
     }
 
@@ -715,7 +716,8 @@ GeometryGroup createGeometryLight()
 
 void updateGeometryLight(float time)
 {
-    light_parameters[0].position.y = 166.787f + time * 12.5f;
+    light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 5.0f;
+
     light_parameters[1].position.x = -6 + time * 100.0f;
     light_parameters[1].radius = 2.0f + 3.0 * time;
 
