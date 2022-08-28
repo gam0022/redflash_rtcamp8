@@ -1938,6 +1938,12 @@ int main(int argc, char** argv)
 
             destroyContext();
 
+            for (std::thread& th : threads) {
+                th.join();
+            }
+
+            threads.clear();
+
             double finish_time = sutil::currentTime();
             double total_time = finish_time - launch_time;
             std::cout << "[info] Finish!\ttotal_time: " << total_time << " sec.\tall_frame_total_sample: " << all_frame_total_sample << std::endl;
