@@ -323,18 +323,16 @@ void registerExitHandler()
 #endif
 }
 
-GeometryInstance createRaymrachingObject(const float3& center, const float3& world_scale, const float3& unit_scale)
+GeometryInstance createRaymrachingObject(const float3& center, const float3& bounds_size)
 {
     Geometry raymarching = context->createGeometry();
     raymarching->setPrimitiveCount(1u);
     raymarching->setIntersectionProgram(pgram_intersection_raymarching);
     raymarching->setBoundingBoxProgram(pgram_bounding_box_raymarching);
 
-    const float3 local_scale = world_scale / unit_scale;
     raymarching["center"]->setFloat(center);
-    raymarching["local_scale"]->setFloat(local_scale);
-    raymarching["aabb_min"]->setFloat(center - world_scale);
-    raymarching["aabb_max"]->setFloat(center + world_scale);
+    raymarching["aabb_min"]->setFloat(center - bounds_size * 0.5f);
+    raymarching["aabb_max"]->setFloat(center + bounds_size * 0.5f);
 
     GeometryInstance gi = context->createGeometryInstance();
     gi->setGeometry(raymarching);
@@ -637,8 +635,7 @@ GeometryGroup createGeometry()
     // Raymarcing
     gis.push_back(createRaymrachingObject(
         make_float3(0.0f),
-        make_float3(300.0f),
-        make_float3(4.3f)));
+        make_float3(600.0f)));
     mat.albedo = make_float3(0.6f);
     mat.metallic = 0.8f;
     mat.roughness = 0.05f;
@@ -667,7 +664,7 @@ GeometryGroup createGeometryLight()
         light.lightType = SPHERE;
         light.position = make_float3(0.0f, 9999.0f, 0.0f);
         light.radius = 1.0f;
-        light.emission = make_float3(100.0f, 1.00f, 1.00f);
+        light.emission = make_float3(10.0f, 10.00f, 10.00f) * 0.1f;
         light_parameters.push_back(light);
     }
 

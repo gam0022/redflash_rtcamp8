@@ -13,7 +13,6 @@ rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 
 rtDeclareVariable(float3, center, , );
-rtDeclareVariable(float3, local_scale, , );
 rtDeclareVariable(float3, aabb_min, , );
 rtDeclareVariable(float3, aabb_max, , );
 rtDeclareVariable(float3, texcoord, attribute texcoord, );
@@ -105,7 +104,9 @@ float map(float3 p)
 {
     // return dMenger((p - center) / local_scale, make_float3(1.23, 1.65, 1.45), 2.56) * local_scale;
     // return dMenger((p - center) / local_scale, make_float3(1, 1, 1), 3.1) * local_scale;
-    return dMandelFast((p - center) / local_scale, 2.76 + time * 0.01 * sin(time), 20) * min(min(local_scale.x, local_scale.y), local_scale.z);
+
+    float scale = 69.7674418605f;
+    return dMandelFast((p - center) / scale, 2.76 + time * 0.01 * sin(time), 20) * scale;
 }
 
 #define calcNormal(p, dFunc, eps) normalize(\

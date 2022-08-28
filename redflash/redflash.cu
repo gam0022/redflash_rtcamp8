@@ -419,7 +419,7 @@ RT_PROGRAM void envmap_miss()
     float phi = M_PIf * 0.5f - acosf(ray.direction.y);
     float u = (theta + M_PIf) * (0.5f * M_1_PIf);
     float v = 0.5f * (1.0f + sin(phi));
-    current_prd.radiance += make_float3(tex2D(envmap, u, v)) * current_prd.attenuation * 0.01f;
+    current_prd.radiance += make_float3(tex2D(envmap, u, v)) * current_prd.attenuation;
     current_prd.albedo = make_float3(0.0f);
     current_prd.normal = -ray.direction;
     current_prd.done = true;
