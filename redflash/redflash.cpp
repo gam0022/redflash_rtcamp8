@@ -54,10 +54,17 @@ const char* const SAMPLE_NAME = "redflash";
 //------------------------------------------------------------------------------
 
 Context context = 0;
+
+// 起動オプションで設定するパラメーター
 int width = 1920 / 4;
 int height = 1080 / 4;
 bool use_pbo = true;
 bool flag_debug = false;
+
+// 動画モード時の初回フレーム（ベンチマーク時）のsample_per_launch
+int init_sample_per_launch = 3;
+
+// 時間やランタイムに変化するパラメーター
 bool flag_debug_render = false;
 double launch_time;
 double animate_time = 0.0f;
@@ -1483,6 +1490,7 @@ void printUsageAndExit(const std::string& argv0)
         "  -t | --time_limit         Time limit(ssc).\n"
         "  --movie_time              Output Movie time length(ssc).\n"
         "  --fps                     Frame per Second.\n"
+        "  --init_sample_per_launch  For movie mode\n"
         "App Keystrokes:\n"
         "  q  Quit\n"
         "  s  Save image to '" << SAMPLE_NAME << ".png'\n"
@@ -1737,6 +1745,15 @@ int main(int argc, char** argv)
             }
             movie_fps = atof(argv[++i]);
         }
+        else if (arg == "--init_sample_per_launch")
+        {
+            if (i == argc - 1)
+            {
+                std::cerr << "Option '" << argv[i] << "' requires additional argument.\n";
+                printUsageAndExit(argv[0]);
+            }
+            init_sample_per_launch = atoi(argv[++i]);
+        }
         else
         {
             std::cerr << "Unknown option '" << arg << "'\n";
@@ -1814,8 +1831,8 @@ int main(int argc, char** argv)
                 bool finalFrame = false;
                 total_sample = 0;
 
-                // 1回目のサンプリング数は3で決め打ち
-                sample_per_launch = 3;
+                // 1回目のサンプリング数を初期値にリセット
+                sample_per_launch = init_sample_per_launch;
 
                 double global_remain_time = time_limit - (frame_start_time - launch_time);
                 int rest_frame = frame_count - frame;
@@ -1826,7 +1843,7 @@ int main(int argc, char** argv)
 
                 std::cout << "[info] frame: " << frame << "\tmovie_time:" << movie_time << "\tframe_time_limit:" << frame_time_limit << std::endl;
 
-                // NOTE: time_limit が指定されていたら、サンプル数は無制限にする
+                // NOTE: 実際には2回ループの場合しかない
                 for (int i = 0; !finalFrame; ++i)
                 {
                     double now = sutil::currentTime();
@@ -1842,7 +1859,11 @@ int main(int argc, char** argv)
                     if (i == 1)
                     {
                         int new_sample_per_launch = (int)(remain_time / delta_time * auto_set_sample_per_launch_scale * sample_per_launch);
-                        new_sample_per_launch = max(1, new_sample_per_launch);// 1以上
+
+                        // 1以上にしないと真っ暗な結果になる
+                        new_sample_per_launch = max(1, new_sample_per_launch);
+
+
                         std::cout << "[info] chnage sample_per_launch: " << sample_per_launch << " to " << new_sample_per_launch << std::endl;
                         sample_per_launch = new_sample_per_launch;
                         finalFrame = true;
