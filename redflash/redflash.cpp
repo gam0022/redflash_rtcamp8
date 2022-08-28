@@ -64,8 +64,15 @@ bool flag_debug = false;
 // 動画モード時の初回フレーム（ベンチマーク時）のsample_per_launch
 int init_sample_per_launch = 3;
 
-// 時間やランタイムに変化するパラメーター
+// 静止画モード用のパラメーター
+bool auto_set_sample_per_launch = false;
+double auto_set_sample_per_launch_scale = 0.95;
+double last_frame_scale = 1.7;
+
+// ランタイムに変化するパラメーター
 bool flag_debug_render = false;
+
+// 時間
 double launch_time;
 double animate_time = 0.0f;
 
@@ -75,9 +82,6 @@ int rr_begin_depth = 1;// unused
 int sample_per_launch = 1;
 int frame_number = 1;
 int total_sample = 0;
-bool auto_set_sample_per_launch = false;
-double auto_set_sample_per_launch_scale = 0.95;
-double last_frame_scale = 1.7;
 
 // Intersect Programs
 Program pgram_intersection = 0;
@@ -1811,9 +1815,7 @@ int main(int argc, char** argv)
             std::cout << "[info] frame_count: " << frame_count << " (fps: " << movie_fps << " x time: " << movie_time << " sec.)" << std::endl;
             std::cout << "[info] resolution: " << width << "x" << height << " px" << std::endl;
             std::cout << "[info] time_limit: " << time_limit << " sec." << std::endl;
-            std::cout << "[info] sample_per_launch: " << sample_per_launch << std::endl;
-            std::cout << "[info] auto_set_sample_per_launch_scale: " << auto_set_sample_per_launch_scale << std::endl;
-            std::cout << "[info] last_frame_scale: " << last_frame_scale << std::endl;
+            std::cout << "[info] init_sample_per_launch: " << init_sample_per_launch << std::endl;
             std::cout << "[info] tonemap_exposure: " << tonemap_exposure << std::endl;
 
             // 画像の非同期保存のためのスレッド
