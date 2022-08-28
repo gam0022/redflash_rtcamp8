@@ -1840,6 +1840,7 @@ int main(int argc, char** argv)
                     if (i == 1)
                     {
                         int new_sample_per_launch = (int)(remain_time / delta_time * auto_set_sample_per_launch_scale * sample_per_launch);
+                        new_sample_per_launch = max(1, new_sample_per_launch);// 1à»è„
                         std::cout << "[info] chnage sample_per_launch: " << sample_per_launch << " to " << new_sample_per_launch << std::endl;
                         sample_per_launch = new_sample_per_launch;
                         finalFrame = true;
