@@ -666,20 +666,21 @@ GeometryGroup createGeometryLight()
         LightParameter light;
         light.lightType = SPHERE;
         light.position = make_float3(0.0f, 9999.0f, 0.0f);
-        light.radius = 3.0f;
+        light.radius = 1.0f;
         light.emission = make_float3(100.0f, 1.00f, 1.00f);
         light_parameters.push_back(light);
     }
 
     {
+        // カメラの先にあるライト
         LightParameter light;
         light.lightType = SPHERE;
 
         float3 target = make_float3(9.8f, 144.5f, 198.0f);
 
         light.position = target + make_float3(-120.0f, 338.0f, 53.0f) * 0.05;
-        light.radius = 3.0f;
-        light.emission = make_float3(10.0f, 10.00f, 10.00f);
+        light.radius = 1.0f;
+        light.emission = make_float3(10.0f, 10.00f, 100.00f);
         light_parameters.push_back(light);
     }
 
@@ -714,12 +715,24 @@ GeometryGroup createGeometryLight()
     return light_group;
 }
 
+float sinFbm(float time)
+{
+    return sin(time) + 0.5 * sin(2.0 * time) + 0.25 * sin(4.0 * time);
+}
+
+float3 sinFbm3(float time)
+{
+    float TAU = 6.28318530718;
+    float t = time * TAU;
+    return make_float3(sinFbm(t), sinFbm(t + 2), sinFbm(t + 3));
+}
+
 void updateGeometryLight(float time)
 {
-    light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 5.0f;
+    light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
 
-    light_parameters[1].position.x = -6 + time * 100.0f;
-    light_parameters[1].radius = 2.0f + 3.0 * time;
+    light_parameters[1].position = camera_lookat + 3 * sinFbm3(0.3 * time);
+    //light_parameters[1].radius = 2.0f + sin(time + 4);
 
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
@@ -818,7 +831,7 @@ void setupCamera()
 // アニメーションの実装
 void updateFrame(float time)
 {
-    if (false)
+    if (!false)
     {
         camera_up = make_float3(0.0f, 1.0f, 0.0f);
         camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
@@ -826,8 +839,11 @@ void updateFrame(float time)
         //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
         //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
 
-        camera_eye = make_float3(1.65f, 196.01f, 287.97f);
-        camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
+        //camera_eye = make_float3(1.65f, 196.01f, 287.97f);
+        //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
+
+        camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
+        camera_eye = camera_lookat + make_float3(0.0f, 0.0f, 30.0f);
     }
 
     updateGeometryLight(time);
@@ -956,9 +972,6 @@ void glutDisplay()
 {
     animate_time = sutil::currentTime() - launch_time - 2;
 
-    // コメントアウトすれば自由カメラになる
-    updateFrame(animate_time);
-
     // FPSカメラ移動
     {
         float speed = 5;
@@ -969,6 +982,9 @@ void glutDisplay()
         if (is_key_Q_pressed) fpsCameraMove(make_float3(0, -1, 0), speed);
         if (is_key_E_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
     }
+
+    // コメントアウトすれば自由カメラになる
+    updateFrame(animate_time);
 
     updateCamera();
 
