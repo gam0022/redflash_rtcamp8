@@ -13,7 +13,6 @@ rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 
 rtDeclareVariable(float3, center, , );
-rtDeclareVariable(float3, local_scale, , );
 rtDeclareVariable(float3, aabb_min, , );
 rtDeclareVariable(float3, aabb_max, , );
 rtDeclareVariable(float3, texcoord, attribute texcoord, );
@@ -101,11 +100,33 @@ float dMandelFast(float3 p, float scale, int n) {
     return length(get_xyz(q)) / abs(q.w);
 }
 
+float fracf(float x)
+{
+    return x - floor(x);
+}
+
+float mod(float a, float b)
+{
+    return fracf(abs(a / b)) * abs(b);
+}
+
+float opRep(float p, float interval)
+{
+    return mod(p, interval) - interval * 0.5;
+}
+
 float map(float3 p)
 {
-    // return dMenger((p - center) / local_scale, make_float3(1.23, 1.65, 1.45), 2.56) * local_scale;
-    // return dMenger((p - center) / local_scale, make_float3(1, 1, 1), 3.1) * local_scale;
-    return dMandelFast((p - center) / local_scale, 2.76 + time * 0.0, 20) * min(min(local_scale.x, local_scale.y), local_scale.z);
+    // return dMenger((p - center) / scale, make_float3(1.23, 1.65, 1.45), 2.56) * scale;
+    // return dMenger((p - center) / scale, make_float3(1, 1, 1), 3.1) * scale;
+
+    // dMengerÇÕïââ◊Ç™çÇÇ¢
+    // p.z = opRep(p.z, 20.0);
+    // float scale = 10;
+    // return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2 + 0.6 * sin(time + 1)), 2.8 + 0.1 * sin(time + 1)) * scale;
+
+    float scale = 70.0f;
+    return dMandelFast((p - center) / scale, 2.76 + time * 0.01 * sin(time), 20) * scale;
 }
 
 #define calcNormal(p, dFunc, eps) normalize(\

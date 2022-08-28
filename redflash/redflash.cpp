@@ -54,23 +54,34 @@ const char* const SAMPLE_NAME = "redflash";
 //------------------------------------------------------------------------------
 
 Context context = 0;
+
+// 起動オプションで設定するパラメーター
 int width = 1920 / 4;
 int height = 1080 / 4;
 bool use_pbo = true;
 bool flag_debug = false;
+
+// 動画モード時の初回フレーム（ベンチマーク時）のsample_per_launch
+int init_sample_per_launch = 3;
+
+// 静止画モード用のパラメーター
+bool auto_set_sample_per_launch = false;
+double auto_set_sample_per_launch_scale = 0.95;
+double last_frame_scale = 1.7;
+
+// ランタイムに変化するパラメーター
 bool flag_debug_render = false;
+
+// 時間
 double launch_time;
 double animate_time = 0.0f;
 
 // sampling
 int max_depth = 10;
-int rr_begin_depth = 1;// unused
+int rr_begin_depth = 1;// ロシアンルーレット開始のdepth（未使用）
 int sample_per_launch = 1;
 int frame_number = 1;
 int total_sample = 0;
-bool auto_set_sample_per_launch = false;
-double auto_set_sample_per_launch_scale = 0.95;
-double last_frame_scale = 1.7;
 
 // Intersect Programs
 Program pgram_intersection = 0;
@@ -323,18 +334,16 @@ void registerExitHandler()
 #endif
 }
 
-GeometryInstance createRaymrachingObject(const float3& center, const float3& world_scale, const float3& unit_scale)
+GeometryInstance createRaymrachingObject(const float3& center, const float3& bounds_size)
 {
     Geometry raymarching = context->createGeometry();
     raymarching->setPrimitiveCount(1u);
     raymarching->setIntersectionProgram(pgram_intersection_raymarching);
     raymarching->setBoundingBoxProgram(pgram_bounding_box_raymarching);
 
-    const float3 local_scale = world_scale / unit_scale;
     raymarching["center"]->setFloat(center);
-    raymarching["local_scale"]->setFloat(local_scale);
-    raymarching["aabb_min"]->setFloat(center - world_scale);
-    raymarching["aabb_max"]->setFloat(center + world_scale);
+    raymarching["aabb_min"]->setFloat(center - bounds_size * 0.5f);
+    raymarching["aabb_max"]->setFloat(center + bounds_size * 0.5f);
 
     GeometryInstance gi = context->createGeometryInstance();
     gi->setGeometry(raymarching);
@@ -637,8 +646,7 @@ GeometryGroup createGeometry()
     // Raymarcing
     gis.push_back(createRaymrachingObject(
         make_float3(0.0f),
-        make_float3(300.0f),
-        make_float3(4.3f)));
+        make_float3(600.0f)));
     mat.albedo = make_float3(0.6f);
     mat.metallic = 0.8f;
     mat.roughness = 0.05f;
@@ -665,20 +673,17 @@ GeometryGroup createGeometryLight()
         LightParameter light;
         light.lightType = SPHERE;
         light.position = make_float3(0.01f, 166.787f, 190.00f);
-        light.radius = 2.0f;
-        light.emission = make_float3(20.0f, 10.00f, 5.00f);
+        light.radius = 1.0f;
+        light.emission = make_float3(100.0f, 100.00f, 100.00f);
         light_parameters.push_back(light);
     }
 
     {
         LightParameter light;
         light.lightType = SPHERE;
-
-        float3 target = make_float3(9.8f, 144.5f, 198.0f);
-
-        light.position = target + make_float3(-120.0f, 338.0f, 53.0f) * 0.05;
-        light.radius = 3.0f;
-        light.emission = make_float3(10.0f, 10.00f, 10.00f);
+        light.position = make_float3(3.8f, 161.4f, 200.65f);
+        light.radius = 0.5f;
+        light.emission = make_float3(100.0f, 100.00f, 100.00f);
         light_parameters.push_back(light);
     }
 
@@ -713,11 +718,27 @@ GeometryGroup createGeometryLight()
     return light_group;
 }
 
+float sinFbm(float time)
+{
+    return sin(time) + 0.5 * sin(2.0 * time) + 0.25 * sin(4.0 * time);
+}
+
+float3 sinFbm3(float time)
+{
+    float TAU = 6.28318530718;
+    float t = time * TAU;
+    return make_float3(sinFbm(t), sinFbm(t + 2), sinFbm(t + 3));
+}
+
 void updateGeometryLight(float time)
 {
-    light_parameters[0].position.y = 166.787f + time * 12.5f;
-    light_parameters[1].position.x = -6 + time * 100.0f;
-    light_parameters[1].radius = 2.0f + 3.0 * time;
+    // Menger用のトンネルの中央を通過するカメラワーク
+    // light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
+    // light_parameters[1].position = camera_lookat + 1 * sinFbm3(0.3 * time);
+
+    // 中距離
+    light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * time) + make_float3(30 * (time - 2.5), 0, 0);
+    light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * time + 5.23);
 
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
@@ -810,13 +831,16 @@ void setupCamera()
     //camera_eye = make_float3(-815.63f, -527.19f, -674.00f);
     //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
+    camera_eye = make_float3(0, 0, 0);
+    camera_lookat = make_float3(0, 0, -30.0f);
+
     camera_rotate = Matrix4x4::identity();
 }
 
 // アニメーションの実装
 void updateFrame(float time)
 {
-    if (false)
+    if (!false)
     {
         camera_up = make_float3(0.0f, 1.0f, 0.0f);
         camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
@@ -824,8 +848,15 @@ void updateFrame(float time)
         //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
         //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
 
-        camera_eye = make_float3(1.65f, 196.01f, 287.97f);
-        camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
+        // 中距離
+        camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), time * 0.01f) + 0.1f * sinFbm3(time + 2.323);
+        camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (time - 2.5), 0, 0);
+
+        // camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
+
+        // Menger用のトンネルの中央を通過するカメラワーク
+        // camera_lookat = make_float3(0.0f, 0.0, 290.4f - 10 * time);
+        // camera_eye = camera_lookat + make_float3(1.0f * sin(time), 1.0f * cos(time), 30.0f * cos(time * 0.5)) + 0.1 * sinFbm3(0.1 * time);
     }
 
     updateGeometryLight(time);
@@ -954,9 +985,6 @@ void glutDisplay()
 {
     animate_time = sutil::currentTime() - launch_time - 2;
 
-    // コメントアウトすれば自由カメラになる
-    updateFrame(animate_time);
-
     // FPSカメラ移動
     {
         float speed = 5;
@@ -967,6 +995,9 @@ void glutDisplay()
         if (is_key_Q_pressed) fpsCameraMove(make_float3(0, -1, 0), speed);
         if (is_key_E_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
     }
+
+    // コメントアウトすれば自由カメラになる
+    updateFrame(animate_time);
 
     updateCamera();
 
@@ -1463,6 +1494,7 @@ void printUsageAndExit(const std::string& argv0)
         "  -t | --time_limit         Time limit(ssc).\n"
         "  --movie_time              Output Movie time length(ssc).\n"
         "  --fps                     Frame per Second.\n"
+        "  --init_sample_per_launch  For movie mode\n"
         "App Keystrokes:\n"
         "  q  Quit\n"
         "  s  Save image to '" << SAMPLE_NAME << ".png'\n"
@@ -1717,6 +1749,15 @@ int main(int argc, char** argv)
             }
             movie_fps = atof(argv[++i]);
         }
+        else if (arg == "--init_sample_per_launch")
+        {
+            if (i == argc - 1)
+            {
+                std::cerr << "Option '" << argv[i] << "' requires additional argument.\n";
+                printUsageAndExit(argv[0]);
+            }
+            init_sample_per_launch = atoi(argv[++i]);
+        }
         else
         {
             std::cerr << "Unknown option '" << arg << "'\n";
@@ -1774,9 +1815,7 @@ int main(int argc, char** argv)
             std::cout << "[info] frame_count: " << frame_count << " (fps: " << movie_fps << " x time: " << movie_time << " sec.)" << std::endl;
             std::cout << "[info] resolution: " << width << "x" << height << " px" << std::endl;
             std::cout << "[info] time_limit: " << time_limit << " sec." << std::endl;
-            std::cout << "[info] sample_per_launch: " << sample_per_launch << std::endl;
-            std::cout << "[info] auto_set_sample_per_launch_scale: " << auto_set_sample_per_launch_scale << std::endl;
-            std::cout << "[info] last_frame_scale: " << last_frame_scale << std::endl;
+            std::cout << "[info] init_sample_per_launch: " << init_sample_per_launch << std::endl;
             std::cout << "[info] tonemap_exposure: " << tonemap_exposure << std::endl;
 
             // 画像の非同期保存のためのスレッド
@@ -1794,8 +1833,8 @@ int main(int argc, char** argv)
                 bool finalFrame = false;
                 total_sample = 0;
 
-                // 1回目のサンプリング数は8で決め打ち
-                sample_per_launch = 8;
+                // 1回目のサンプリング数を初期値にリセット
+                sample_per_launch = init_sample_per_launch;
 
                 double global_remain_time = time_limit - (frame_start_time - launch_time);
                 int rest_frame = frame_count - frame;
@@ -1806,7 +1845,7 @@ int main(int argc, char** argv)
 
                 std::cout << "[info] frame: " << frame << "\tmovie_time:" << movie_time << "\tframe_time_limit:" << frame_time_limit << std::endl;
 
-                // NOTE: time_limit が指定されていたら、サンプル数は無制限にする
+                // NOTE: 実際には2回ループの場合しかない
                 for (int i = 0; !finalFrame; ++i)
                 {
                     double now = sutil::currentTime();
@@ -1822,6 +1861,11 @@ int main(int argc, char** argv)
                     if (i == 1)
                     {
                         int new_sample_per_launch = (int)(remain_time / delta_time * auto_set_sample_per_launch_scale * sample_per_launch);
+
+                        // 1以上にしないと真っ暗な結果になる
+                        new_sample_per_launch = max(1, new_sample_per_launch);
+
+
                         std::cout << "[info] chnage sample_per_launch: " << sample_per_launch << " to " << new_sample_per_launch << std::endl;
                         sample_per_launch = new_sample_per_launch;
                         finalFrame = true;
