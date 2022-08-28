@@ -120,12 +120,17 @@ float map(float3 p)
     // return dMenger((p - center) / scale, make_float3(1.23, 1.65, 1.45), 2.56) * scale;
     // return dMenger((p - center) / scale, make_float3(1, 1, 1), 3.1) * scale;
 
-    // float scale = 69.7674418605f;
-    // return dMandelFast((p - center) / scale, 2.76 + time * 0.01 * sin(time), 20) * scale;
-
-    p.z = opRep(p.z, 20.0);
-    float scale = 10;
-    return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2 + 0.6 * sin(time)), 2.8 + 0.1 * sin(time)) * scale;
+    if (time < 2.0f)
+    {
+        p.z = opRep(p.z, 20.0);
+        float scale = 10;
+        return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2 + 0.6 * sin(time + 1)), 2.8 + 0.1 * sin(time + 1)) * scale;
+    }
+    else
+    {
+        float scale = 69.7674418605f;
+        return dMandelFast((p - center) / scale, 2.76 + time * 0.01 * sin(time), 20) * scale;
+    }
 }
 
 #define calcNormal(p, dFunc, eps) normalize(\
