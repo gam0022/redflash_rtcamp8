@@ -670,25 +670,20 @@ GeometryGroup createGeometryLight()
     }*/
 
     {
-        // カメラの背後のライト
         LightParameter light;
         light.lightType = SPHERE;
-        light.position = make_float3(0.0f, 9999.0f, 0.0f);
+        light.position = make_float3(0.01f, 166.787f, 190.00f);
         light.radius = 1.0f;
-        light.emission = make_float3(10.0f, 10.00f, 10.00f) * 0.1f;
+        light.emission = make_float3(100.0f, 100.00f, 100.00f);
         light_parameters.push_back(light);
     }
 
     {
-        // カメラの先にあるライト
         LightParameter light;
         light.lightType = SPHERE;
-
-        float3 target = make_float3(9.8f, 144.5f, 198.0f);
-
-        light.position = target + make_float3(-120.0f, 338.0f, 53.0f) * 0.05;
+        light.position = make_float3(3.8f, 161.4f, 200.65f);
         light.radius = 0.5f;
-        light.emission = make_float3(100.0f, 100.00f, 100.00f) * 10;
+        light.emission = make_float3(100.0f, 100.00f, 100.00f);
         light_parameters.push_back(light);
     }
 
@@ -737,10 +732,13 @@ float3 sinFbm3(float time)
 
 void updateGeometryLight(float time)
 {
-    light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
+    // Menger用のトンネルの中央を通過するカメラワーク
+    // light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
+    // light_parameters[1].position = camera_lookat + 1 * sinFbm3(0.3 * time);
 
-    light_parameters[1].position = camera_lookat + 1 * sinFbm3(0.3 * time);
-    //light_parameters[1].radius = 2.0f + sin(time + 4);
+    // 中距離
+    light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * time) + make_float3(30 * (time - 2.5), 0, 0);
+    light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * time + 5.23);
 
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
@@ -850,13 +848,15 @@ void updateFrame(float time)
         //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
         //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
 
-        //camera_eye = make_float3(1.65f, 196.01f, 287.97f);
-        //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
+        // 中距離
+        camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), time * 0.01f) + 0.1f * sinFbm3(time + 2.323);
+        camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (time - 2.5), 0, 0);
 
         // camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
-        camera_lookat = make_float3(0.0f, 0.0, 290.4f - 10 * time);
 
-        camera_eye = camera_lookat + make_float3(1.0f * sin(time), 1.0f * cos(time), 30.0f * cos(time * 0.5)) + 0.1 * sinFbm3(0.1 * time);
+        // Menger用のトンネルの中央を通過するカメラワーク
+        // camera_lookat = make_float3(0.0f, 0.0, 290.4f - 10 * time);
+        // camera_eye = camera_lookat + make_float3(1.0f * sin(time), 1.0f * cos(time), 30.0f * cos(time * 0.5)) + 0.1 * sinFbm3(0.1 * time);
     }
 
     updateGeometryLight(time);
