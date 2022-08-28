@@ -679,8 +679,8 @@ GeometryGroup createGeometryLight()
         float3 target = make_float3(9.8f, 144.5f, 198.0f);
 
         light.position = target + make_float3(-120.0f, 338.0f, 53.0f) * 0.05;
-        light.radius = 1.0f;
-        light.emission = make_float3(10.0f, 10.00f, 100.00f);
+        light.radius = 0.5f;
+        light.emission = make_float3(100.0f, 100.00f, 100.00f) * 10;
         light_parameters.push_back(light);
     }
 
