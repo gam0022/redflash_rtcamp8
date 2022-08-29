@@ -74,6 +74,7 @@ bool flag_debug_render = false;
 
 // 時間
 double launch_time;
+double animate_begin_time;
 double animate_time = 0.0f;
 
 // sampling
@@ -124,7 +125,7 @@ bool denoiser_perf_mode = false;
 int denoiser_perf_iter = 1;
 
 // number of frames that show the original image before switching on denoising
-int numNonDenoisedFrames = 4;
+int numNonDenoisedFrames = 0;
 
 // Defines the amount of the original image that is blended with the denoised result
 // ranging from 0.0 to 1.0
@@ -984,7 +985,7 @@ void fpsCameraMove(float3& camera_local_offset, float speed)
 
 void glutDisplay()
 {
-    animate_time = sutil::currentTime() - launch_time - 2;
+    animate_time = sutil::currentTime() - animate_begin_time;
 
     // FPSカメラ移動
     {
@@ -1077,7 +1078,7 @@ void glutDisplay()
             break;
         }
         }
-        if (isEarlyFrame)
+        if (isEarlyFrame || flag_debug_render)
         {
             bufferInfo = "Tonemapped (early frame non-denoised)";
             // gamma correction already applied by tone mapper, avoid doing it twice
@@ -1239,6 +1240,11 @@ void glutKeyboardPress(unsigned char k, int x, int y)
     case('r'):
     {
         flag_debug_render = !flag_debug_render;
+        break;
+    }
+    case('t'):
+    {
+        animate_begin_time = sutil::currentTime();
         break;
     }
     case('m'):
@@ -1952,6 +1958,7 @@ int main(int argc, char** argv)
         // インタラクティブモード
         else if (out_file.empty())
         {
+            animate_begin_time = sutil::currentTime();
             glutRun();
         }
         // 静止画モード
