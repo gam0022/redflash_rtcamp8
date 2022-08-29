@@ -831,8 +831,9 @@ void setupCamera()
     //camera_eye = make_float3(-815.63f, -527.19f, -674.00f);
     //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
-    camera_eye = make_float3(0, 0, 0);
-    camera_lookat = make_float3(0, 0, -30.0f);
+    // 中心
+    // camera_eye = make_float3(0, 0, 0);
+    // camera_lookat = make_float3(0, 0, -30.0f);
 
     camera_rotate = Matrix4x4::identity();
 }
@@ -997,7 +998,7 @@ void glutDisplay()
     }
 
     // コメントアウトすれば自由カメラになる
-    updateFrame(animate_time);
+    //updateFrame(animate_time);
 
     updateCamera();
 
