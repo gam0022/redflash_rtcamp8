@@ -78,7 +78,7 @@ double animate_begin_time;
 double animate_time = 0.0f;
 
 // sampling
-int max_depth = 10;
+int max_depth = 1;
 int rr_begin_depth = 1;// ロシアンルーレット開始のdepth（未使用）
 int sample_per_launch = 1;
 int frame_number = 1;
