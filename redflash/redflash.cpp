@@ -737,10 +737,6 @@ void updateGeometryLight(float time)
     // light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
     // light_parameters[1].position = camera_lookat + 1 * sinFbm3(0.3 * time);
 
-    // 中距離
-    light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * time) + make_float3(30 * (time - 2.5), 0, 0);
-    light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * time + 5.23);
-
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
     {
@@ -843,37 +839,49 @@ void setupCamera()
 void updateFrame(float time)
 {
     bool update_camera = true;
-    float t = 0.0;
+    float t = time;
+
+    // 中距離
+    light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * time) + make_float3(30 * (time - 2.5), 0, 0);
+    light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * time + 5.23);
 
     if (update_camera)
     {
         camera_up = make_float3(0.0f, 1.0f, 0.0f);
         camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
 
-        //camera_eye = make_float3(13.91f, 166.787f, 413.00f);
-        //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
-
-        // 中距離
         if (time < 2)
         {
-            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.1f * sinFbm3(t + 2.323);
+            // 中距離
+            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.01f * sinFbm3(t + 2.323);
             camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0);
         }
         else if (time < 3)
         {
-            t = time - 2;
-            camera_eye = make_float3(9.08f, 150.98f, 210.78f);
+            // Lucyに近づく
+            t = time * 0.05f;
             camera_lookat = make_float3(1.41f, 150.12f, 200.42f);
+            // camera_eye = make_float3(9.08f, 150.98f, 210.78f);
+            camera_eye = camera_lookat + make_float3(sin(t), 0.4, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
+        }
+        else if(time < 5)
+        {
+            // 中距離
+            t = time - 1;
+            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.01f * sinFbm3(t + 2.323);
+            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0) + 0.05f * sinFbm3(t + 5.42323);
+
+            light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * t) + make_float3(30 * (t - 2.5), 0, 0);
+            light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * t + 5.23);
         }
         else
         {
-            t = time - 3;
-            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.1f * sinFbm3(t + 2.323);
-            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0);
-        }
-        
+            t = time - 5;
+            camera_eye = make_float3(-23.05f + 0.05 * t, -162.65f - t * 0.05, 298.98f) + 0.01f * sinFbm3(t + 5.42323);
+            camera_lookat = make_float3(26.0f, -189.83f, 62.96f) + 0.01f * sinFbm3(t + 5.42323);
 
-        // camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
+            camera_fov = lerp(10.0f, 30.0f, time / 5.0f);
+        }
 
         // Menger用のトンネルの中央を通過するカメラワーク
         // camera_lookat = make_float3(0.0f, 0.0, 290.4f - 10 * time);

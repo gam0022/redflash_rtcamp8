@@ -124,9 +124,15 @@ float map(float3 p)
     // p.z = opRep(p.z, 20.0);
     // float scale = 10;
     // return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2 + 0.6 * sin(time + 1)), 2.8 + 0.1 * sin(time + 1)) * scale;
+    
+    float t = 0.0f;
+    if (time >= 5.0f)
+    {
+        t = time - 5;
+    }
 
     float scale = 70.0f;
-    return dMandelFast((p - center) / scale, 2.76 + time * 0.01 * sin(time), 20) * scale;
+    return dMandelFast((p - center) / scale, 2.76 + sin(t), 20) * scale;
 }
 
 #define calcNormal(p, dFunc, eps) normalize(\
