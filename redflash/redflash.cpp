@@ -998,7 +998,7 @@ void glutDisplay()
     }
 
     // コメントアウトすれば自由カメラになる
-    //updateFrame(animate_time);
+    updateFrame(animate_time);
 
     updateCamera();
 
