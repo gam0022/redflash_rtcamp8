@@ -864,7 +864,7 @@ void updateFrame(float time)
             // camera_eye = make_float3(9.08f, 150.98f, 210.78f);
             camera_eye = camera_lookat + make_float3(sin(t), 0.4, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
         }
-        else if(time < 5)
+        else if (time < 5)
         {
             // ’†‹——£
             t = time - 1;
