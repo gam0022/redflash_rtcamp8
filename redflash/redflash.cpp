@@ -1920,10 +1920,14 @@ int main(int argc, char** argv)
                             std::cout << "[info] final_frame\trender_time:" << end_time - begin_time << "\tsample_per_launch: " << sample_per_launch << std::endl;
                         }
 
+                        double thread_join_begin = sutil::currentTime();
 
                         for (std::thread& th : threads) {
                             th.join();
                         }
+
+                        double thread_join_end = sutil::currentTime();
+                        std::cout << "[info] thread_join_time: " << thread_join_end - thread_join_begin << " sec." << std::endl;
 
                         threads.clear();
 
