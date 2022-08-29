@@ -831,8 +831,9 @@ void setupCamera()
     //camera_eye = make_float3(-815.63f, -527.19f, -674.00f);
     //camera_lookat = make_float3(-7.06f, 76.34f, 26.96f);
 
-    camera_eye = make_float3(0, 0, 0);
-    camera_lookat = make_float3(0, 0, -30.0f);
+    // íÜêS
+    // camera_eye = make_float3(0, 0, 0);
+    // camera_lookat = make_float3(0, 0, -30.0f);
 
     camera_rotate = Matrix4x4::identity();
 }
@@ -1937,6 +1938,12 @@ int main(int argc, char** argv)
             }
 
             destroyContext();
+
+            for (std::thread& th : threads) {
+                th.join();
+            }
+
+            threads.clear();
 
             double finish_time = sutil::currentTime();
             double total_time = finish_time - launch_time;
