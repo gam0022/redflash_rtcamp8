@@ -842,7 +842,10 @@ void setupCamera()
 // アニメーションの実装
 void updateFrame(float time)
 {
-    if (!false)
+    bool update_camera = true;
+    float t = 0.0;
+
+    if (update_camera)
     {
         camera_up = make_float3(0.0f, 1.0f, 0.0f);
         camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
@@ -851,8 +854,24 @@ void updateFrame(float time)
         //camera_lookat = make_float3(-6.59f, 169.94f, -9.11f);
 
         // 中距離
-        camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), time * 0.01f) + 0.1f * sinFbm3(time + 2.323);
-        camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (time - 2.5), 0, 0);
+        if (time < 2)
+        {
+            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.1f * sinFbm3(t + 2.323);
+            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0);
+        }
+        else if (time < 3)
+        {
+            t = time - 2;
+            camera_eye = make_float3(9.08f, 150.98f, 210.78f);
+            camera_lookat = make_float3(1.41f, 150.12f, 200.42f);
+        }
+        else
+        {
+            t = time - 3;
+            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.1f * sinFbm3(t + 2.323);
+            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0);
+        }
+        
 
         // camera_lookat = make_float3(2.75f, 261.91f, 290.4f - 30 * time);
 
