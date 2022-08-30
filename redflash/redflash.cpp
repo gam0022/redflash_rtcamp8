@@ -685,15 +685,6 @@ GeometryGroup createGeometry()
 
 GeometryGroup createGeometryLight()
 {
-    /*{
-        LightParameter light;
-        light.lightType = SPHERE;
-        light.position = make_float3(50, 310, 50);
-        light.radius = 10.0f;
-        light.emission = make_float3(1.0);
-        lightParameters.push_back(light);
-    }*/
-
     {
         LightParameter light;
         light.lightType = SPHERE;
@@ -756,10 +747,6 @@ float3 sinFbm3(float time)
 
 void updateGeometryLight(float time)
 {
-    // Menger用のトンネルの中央を通過するカメラワーク
-    // light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
-    // light_parameters[1].position = camera_lookat + 1 * sinFbm3(0.3 * time);
-
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
     {
@@ -873,7 +860,7 @@ void updateFrame(float time)
     if (update_camera)
     {
         camera_up = make_float3(0.0f, 1.0f, 0.0f);
-        camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
+        camera_fov = 35.0f;
 
         if (time < 2)
         {
@@ -886,7 +873,6 @@ void updateFrame(float time)
             // Lucyに近づく
             t = time * 0.05f;
             camera_lookat = make_float3(1.41f, 150.12f, 200.42f);
-            // camera_eye = make_float3(9.08f, 150.98f, 210.78f);
             camera_eye = camera_lookat + make_float3(sin(t), 0.4 + t, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
         }
         else if (time < 3.5)
@@ -924,10 +910,6 @@ void updateFrame(float time)
             camera_lookat = make_float3(37.55, -31.94, -13.92) + make_float3(5 * (t - 2.5), 0, 0);
             camera_fov = lerp(10.0f, 30.0f, t / 3.0f);
         }
-
-        // Menger用のトンネルの中央を通過するカメラワーク
-        // camera_lookat = make_float3(0.0f, 0.0, 290.4f - 10 * time);
-        // camera_eye = camera_lookat + make_float3(1.0f * sin(time), 1.0f * cos(time), 30.0f * cos(time * 0.5)) + 0.1 * sinFbm3(0.1 * time);
     }
 
     updateGeometryLight(time);
@@ -1194,14 +1176,6 @@ void glutDisplay()
         static unsigned frame_count = 0;
         sutil::displayFps(frame_count++);
     }
-
-    /*
-    {
-        static char total_sample_text[32];
-        sprintf(total_sample_text, "total_sample:   %d", total_sample);
-        sutil::displayText(total_sample_text, 10, 80);
-    }
-    */
 
     {
         static char animate_time_text[32];
