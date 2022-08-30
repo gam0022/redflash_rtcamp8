@@ -24,7 +24,7 @@ enum BSDFType
     DISNEY
 };
 
-enum CustomMaterialProgramType
+enum MaterialCustomProgramType
 {
     Nop,
     Raymarching

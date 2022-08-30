@@ -576,7 +576,7 @@ void setupPostprocessing()
 }
 
 void registerMaterial(GeometryInstance& gi, MaterialParameter& mat, 
-    CustomMaterialProgramType material_custom_program_id = CustomMaterialProgramType::Nop, bool isLight = false)
+    MaterialCustomProgramType material_custom_program_id = MaterialCustomProgramType::Nop, bool isLight = false)
 {
     materialParameters.push_back(mat);
     gi->setMaterialCount(1);
@@ -675,7 +675,7 @@ GeometryGroup createGeometry()
     mat.albedo = make_float3(0.6f);
     mat.metallic = 0.8f;
     mat.roughness = 0.05f;
-    registerMaterial(gis.back(), mat, CustomMaterialProgramType::Raymarching);
+    registerMaterial(gis.back(), mat, MaterialCustomProgramType::Raymarching);
 
     // Create shadow group (no light)
     GeometryGroup shadow_group = context->createGeometryGroup(gis.begin(), gis.end());
@@ -714,7 +714,7 @@ GeometryGroup createGeometryLight()
 
         MaterialParameter mat;
         mat.emission = light->emission;
-        registerMaterial(light_gis.back(), mat, CustomMaterialProgramType::Nop, true);
+        registerMaterial(light_gis.back(), mat, MaterialCustomProgramType::Nop, true);
 
         ++index;
     }
