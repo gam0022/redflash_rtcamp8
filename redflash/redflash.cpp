@@ -888,7 +888,7 @@ void updateFrame(float time)
             // camera_eye = make_float3(9.08f, 150.98f, 210.78f);
             camera_eye = camera_lookat + make_float3(sin(t), 0.4, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
         }
-        else if (time < 4)
+        else if (time < 3.5)
         {
             // 中距離
             t = time;
@@ -906,19 +906,12 @@ void updateFrame(float time)
 
             camera_fov = lerp(10.0f, 30.0f, time / 5.0f);
         }
-        else if(time < 9)
+        else if(time < 10)
         {
             t = time - 7;
             camera_eye = make_float3(-49.8, 36.14, 251.44) + 0.01 * sinFbm3(t + 2.323);
             camera_lookat = make_float3(47.55, -31.94, -13.92) + make_float3(5 * (t - 2.5), 0, 0);
             camera_fov = lerp(10.0f, 30.0f, t / 3.0f);
-        }
-        else if (time < 10)
-        {
-            t = time - 7;
-            camera_eye = make_float3(-49.8, 36.14, 281.44) + 0.01 * sinFbm3(t + 2.323);
-            camera_lookat = make_float3(47.55, -31.94, -13.92) + make_float3(5 * (t - 2.5), 0, 0);
-            camera_fov = 30;
         }
 
         // Menger用のトンネルの中央を通過するカメラワーク

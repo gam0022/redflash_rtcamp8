@@ -20,14 +20,22 @@ rtDeclareVariable(float3, texcoord, attribute texcoord, );
 // プライマリレイのDepthを利用した高速化用
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
 
-float dMenger(float3 z0, float3 offset, float scale) {
-    float4 z = make_float4(z0, 1.0);
+static __forceinline__ __device__ float3 abs_float3(float3 v)
+{
+    return make_float3(abs(v.x), abs(v.y), abs(v.z));
+}
+
+static __forceinline__ __device__ float3 max_float3(float3 v, float a)
+{
+    return make_float3(max(v.x, a), max(v.y, a), max(v.z, a));
+}
+
+static __forceinline__ __device__ float dMenger(float3 z0, float3 offset, float scale) {
+    float3 z = z0;
+    float w = 1.0;
+
     for (int n = 0; n < 3; n++) {
-        // z = abs(z);
-        z.x = abs(z.x);
-        z.y = abs(z.y);
-        z.z = abs(z.z);
-        z.w = abs(z.w);
+        z = abs_float3(z);
 
         // if (z.x < z.y) z.xy = z.yx;
         if (z.x < z.y)
@@ -54,16 +62,15 @@ float dMenger(float3 z0, float3 offset, float scale) {
         }
 
         z *= scale;
-        // z.xyz -= offset * (scale - 1.0);
-        z.x -= offset.x * (scale - 1.0);
-        z.y -= offset.y * (scale - 1.0);
-        z.z -= offset.z * (scale - 1.0);
+        w *= scale;
 
-        if (z.z < -0.5 * offset.z * (scale - 1.0))
-            z.z += offset.z * (scale - 1.0);
+        float scale_minus_one = scale - 1.0;
+        z -= offset * scale_minus_one;
+
+        float tmp = offset.z * scale_minus_one;
+        if (z.z < -0.5 * tmp) z.z += tmp;
     }
-    // return (length(max(abs(z.xyz) - make_float3(1.0, 1.0, 1.0), 0.0)) - 0.05) / z.w;
-    return (length(make_float3(max(abs(z.x) - 1.0, 0.0), max(abs(z.y) - 1.0, 0.0), max(abs(z.z) - 1.0, 0.0))) - 0.05) / z.w;
+    return (length(max_float3(abs_float3(z) - make_float3(1.0), 0.0)) - 0.01) / w;
 }
 
 float3 get_xyz(float4 p)
