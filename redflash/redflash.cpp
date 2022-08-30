@@ -1012,6 +1012,12 @@ void fpsCameraMove(float3& camera_local_offset, float speed)
 
 void glutDisplay()
 {
+    // 10•b‚Åƒ‹[ƒv
+    if (animate_time > 10.0f)
+    {
+        animate_begin_time = sutil::currentTime();
+    }
+
     animate_time = sutil::currentTime() - animate_begin_time;
 
     // FPSƒJƒƒ‰ˆÚ“®
