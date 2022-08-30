@@ -912,7 +912,7 @@ void updateFrame(float time)
         else if (time < 7)
         {
             // Mandelbox�̕ό`
-            t = time - 6;
+            t = time - 5;
             camera_eye = make_float3(-100.96, 95.12 + 100 + 2 * t, 387.54) + 0.01 * sinFbm3(t + 2.323);
             camera_lookat = make_float3(45.95, -58.26 + 100 + 2 * t, -194.11);
         }
