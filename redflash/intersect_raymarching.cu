@@ -127,19 +127,28 @@ float map(float3 p)
     // return dMenger((p - center) / scale, make_float3(1.23, 1.65, 1.45), 2.56) * scale;
     // return dMenger((p - center) / scale, make_float3(1, 1, 1), 3.1) * scale;
 
-    // dMenger‚Í•‰‰×‚ª‚‚¢
-    // p.z = opRep(p.z, 20.0);
-
     if (time < 7)
     {
-        float t = 0.0f;
-        if (time >= 5.0f)
+        float s = 2.76;
+        float t;
+
+        if (time < 3.5)
+        {
+            // nop
+        }
+        else if (time < 5)
+        {
+            t = time - 3.5;
+            s = 3.1 - 0.2 * t;
+        }
+        else
         {
             t = time - 5;
+            s = 2.8 - 0.2 * t;
         }
 
         float scale = 70.0f;
-        return dMandelFast((p - center) / scale, 2.76 + 0.01 * t, 20) * scale;
+        return dMandelFast((p - center) / scale, s, 20) * scale;
     }
     else
     {

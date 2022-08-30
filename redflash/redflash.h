@@ -8,6 +8,9 @@ using namespace optix;
 #define RT_FUNCTION __forceinline__ __device__
 #endif
 
+const float PI = 3.14159265359;
+const float TAU = 6.28318530718;
+
 struct State
 {
     float3 hitpoint;
