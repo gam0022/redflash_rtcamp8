@@ -215,7 +215,7 @@ RT_CALLABLE_PROGRAM void customMaterialProgram_Raymarching(MaterialParameter& ma
     mat.emission = make_float3(0.2, 0.2, 1) * pow(edge, 2.0f) * abs(sin(0.1 * p.z + 0.5 * time));
 
     float bar = smoothstep(0.8, 1.0, sin(p.z + 2 * time));
-    mat.emission += bar * make_float3(0.2, 0.2, 4.0) * 3;
+    mat.emission += bar * make_float3(0.2, 0.2, 20);
 
     mat.roughness = 0.3;
     mat.metallic = 1.0;

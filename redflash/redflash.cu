@@ -162,7 +162,7 @@ RT_PROGRAM void pathtrace_camera()
         // pixel_normal = lerp(make_float3(input_normal_buffer[launch_index]), pixel_normal, a);
     }
 
-    float3 pixel_output = use_post_tonemap ? pixel_liner : linear_to_sRGB(tonemap_acesFilm(pixel_liner * tonemap_exposure));
+    float3 pixel_output = use_post_tonemap ? pixel_liner : linear_to_sRGB(tonemap_acesFilm((pixel_liner * tonemap_exposure)));
 
     // Save to buffer
     liner_buffer[launch_index] = make_float4(pixel_liner, 1.0);

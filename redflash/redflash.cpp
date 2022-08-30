@@ -690,7 +690,7 @@ GeometryGroup createGeometryLight()
         light.lightType = SPHERE;
         light.position = make_float3(0.01f, 166.787f, 190.00f);
         light.radius = 1.0f;
-        light.emission = make_float3(100.0f, 100.00f, 100.00f);
+        light.emission = make_float3(20.0f, 10.00f, 5.00f) * 2;
         light_parameters.push_back(light);
     }
 
@@ -699,7 +699,7 @@ GeometryGroup createGeometryLight()
         light.lightType = SPHERE;
         light.position = make_float3(3.8f, 161.4f, 200.65f);
         light.radius = 0.5f;
-        light.emission = make_float3(100.0f, 100.00f, 100.00f);
+        light.emission = make_float3(20.0f, 10.00f, 5.00f) * 2;
         light_parameters.push_back(light);
     }
 
