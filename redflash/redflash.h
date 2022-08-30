@@ -21,6 +21,12 @@ enum BSDFType
     DISNEY
 };
 
+enum CustomMaterialProgramType
+{
+    Nop,
+    Raymarching
+};
+
 struct MaterialParameter
 {
     RT_FUNCTION MaterialParameter()

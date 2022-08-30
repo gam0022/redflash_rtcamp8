@@ -150,6 +150,16 @@ float3 calcNormalBasic(float3 p, float eps)
     ));
 }
 
+RT_CALLABLE_PROGRAM void customMaterialProgram_Nop(MaterialParameter& mat, State& state)
+{
+
+}
+
+RT_CALLABLE_PROGRAM void customMaterialProgram_Raymarching(MaterialParameter& mat, State& state)
+{
+    mat.emission = make_float3(0.2, 0.2, 1) * (0.5 + 0.5 * sin(time));
+}
+
 RT_PROGRAM void intersect(int primIdx)
 {
     float eps;

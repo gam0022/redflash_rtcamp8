@@ -56,8 +56,8 @@ const char* const SAMPLE_NAME = "redflash";
 Context context = 0;
 
 // 起動オプションで設定するパラメーター
-int width = 1920 / 4;
-int height = 1080 / 4;
+int width = 1920 / 2;
+int height = 1080 / 2;
 bool use_pbo = true;
 bool flag_debug = false;
 
@@ -421,6 +421,25 @@ void setupBSDF(std::vector<std::string>& bsdf_paths)
     }
 }
 
+void setupCustomMaterialProgram(const char* ptx)
+{
+    std::string prefix = "customMaterialProgram_";
+    std::vector<std::string> prg_names = { "Nop", "Raymarching" };
+    int prg_count = prg_names.size();
+
+    optix::Buffer buffer_CustomMaterial_prgs = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_PROGRAM_ID, prg_count);
+    int* CustomMaterial_prgs = (int*)buffer_CustomMaterial_prgs->map(0, RT_BUFFER_MAP_WRITE_DISCARD);
+
+    for (int i = 0; i < prg_count; ++i)
+    {
+        Program prg = context->createProgramFromPTXString(ptx, prefix + prg_names[i]);
+        CustomMaterial_prgs[i] = prg->getId();
+    }
+
+    buffer_CustomMaterial_prgs->unmap();
+    context["prgs_MaterialCustom"]->setBuffer(buffer_CustomMaterial_prgs);
+}
+
 void createContext()
 {
     context = Context::create();
@@ -488,6 +507,9 @@ void createContext()
     pgram_bounding_box_raymarching = context->createProgramFromPTXString(ptx, "bounds");
     pgram_intersection_raymarching = context->createProgramFromPTXString(ptx, "intersect");
 
+    // Material Custom Program
+    setupCustomMaterialProgram(ptx);
+
     // Sphere programs
     ptx = sutil::getPtxString(SAMPLE_NAME, "intersect_sphere.cu");
     pgram_bounding_box_sphere = context->createProgramFromPTXString(ptx, "bounds");
@@ -553,13 +575,15 @@ void setupPostprocessing()
     postprocessing_needs_init = false;
 }
 
-void registerMaterial(GeometryInstance& gi, MaterialParameter& mat, bool isLight = false)
+void registerMaterial(GeometryInstance& gi, MaterialParameter& mat, 
+    CustomMaterialProgramType material_custom_program_id = CustomMaterialProgramType::Nop, bool isLight = false)
 {
     materialParameters.push_back(mat);
     gi->setMaterialCount(1);
     gi->setMaterial(0, isLight ? light_material : common_material);
-    gi["bsdf_id"]->setInt(mat.bsdf);
     gi["material_id"]->setInt(materialCount++);
+    gi["bsdf_id"]->setInt(mat.bsdf);
+    gi["material_custom_program_id"]->setInt(material_custom_program_id);
 }
 
 void updateMaterialParameters()
@@ -651,7 +675,7 @@ GeometryGroup createGeometry()
     mat.albedo = make_float3(0.6f);
     mat.metallic = 0.8f;
     mat.roughness = 0.05f;
-    registerMaterial(gis.back(), mat);
+    registerMaterial(gis.back(), mat, CustomMaterialProgramType::Raymarching);
 
     // Create shadow group (no light)
     GeometryGroup shadow_group = context->createGeometryGroup(gis.begin(), gis.end());
@@ -699,7 +723,7 @@ GeometryGroup createGeometryLight()
 
         MaterialParameter mat;
         mat.emission = light->emission;
-        registerMaterial(light_gis.back(), mat, true);
+        registerMaterial(light_gis.back(), mat, CustomMaterialProgramType::Nop, true);
 
         ++index;
     }
@@ -785,8 +809,8 @@ void setupScene()
 
     // Envmap
     const float3 default_color = make_float3(1.0f, 1.0f, 1.0f);
-    //const std::string texpath = resolveDataPath("GrandCanyon_C_YumaPoint/GCanyon_C_YumaPoint_3k.hdr");
-    const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Ref.hdr");
+    const std::string texpath = resolveDataPath("GrandCanyon_C_YumaPoint/GCanyon_C_YumaPoint_3k.hdr");
+    //const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Ref.hdr");
     //const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Env.hdr");
     //const std::string texpath = resolveDataPath("Desert_Highway/Road_to_MonumentValley_Env.hdr");
     context["envmap"]->setTextureSampler(sutil::loadTexture(context, texpath, default_color));
