@@ -17,6 +17,7 @@ rtDeclareVariable(float, scene_epsilon, , );
 rtDeclareVariable(rtObject, top_object, , );
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
+rtDeclareVariable(float, time, , );
 
 //-----------------------------------------------------------------------------
 //

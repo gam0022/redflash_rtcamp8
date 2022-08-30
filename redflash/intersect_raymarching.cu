@@ -33,6 +33,7 @@ static __forceinline__ __device__ float3 max_float3(float3 v, float a)
 static __forceinline__ __device__ float dMenger(float3 z0, float3 offset, float scale) {
     float3 z = z0;
     float w = 1.0;
+    float scale_minus_one = scale - 1.0;
 
     for (int n = 0; n < 3; n++) {
         z = abs_float3(z);
@@ -64,7 +65,6 @@ static __forceinline__ __device__ float dMenger(float3 z0, float3 offset, float 
         z *= scale;
         w *= scale;
 
-        float scale_minus_one = scale - 1.0;
         z -= offset * scale_minus_one;
 
         float tmp = offset.z * scale_minus_one;
@@ -205,12 +205,12 @@ RT_CALLABLE_PROGRAM void customMaterialProgram_Raymarching(MaterialParameter& ma
     float edge = calcEdge(p, 0.02);
     mat.emission = make_float3(0.2, 0.2, 1) * pow(edge, 2.0f) * abs(sin(0.1 * p.z + 0.5 * time));
 
-    float bar = smoothstep(0.9, 1.0, sin(p.z + 2 * time));
+    float bar = smoothstep(0.8, 1.0, sin(p.z + 2 * time));
     mat.emission += bar * make_float3(0.2, 0.2, 4.0) * 3;
 
     mat.roughness = 0.3;
     mat.metallic = 1.0;
-    mat.albedo = make_float3(0.6);
+    mat.albedo = make_float3(0.3);
 }
 
 RT_PROGRAM void intersect(int primIdx)
