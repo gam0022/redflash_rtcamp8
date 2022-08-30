@@ -809,8 +809,8 @@ void setupScene()
 
     // Envmap
     const float3 default_color = make_float3(1.0f, 1.0f, 1.0f);
-    const std::string texpath = resolveDataPath("GrandCanyon_C_YumaPoint/GCanyon_C_YumaPoint_3k.hdr");
-    //const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Ref.hdr");
+    //const std::string texpath = resolveDataPath("GrandCanyon_C_YumaPoint/GCanyon_C_YumaPoint_3k.hdr");
+    const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Ref.hdr");
     //const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Env.hdr");
     //const std::string texpath = resolveDataPath("Desert_Highway/Road_to_MonumentValley_Env.hdr");
     context["envmap"]->setTextureSampler(sutil::loadTexture(context, texpath, default_color));
@@ -888,23 +888,37 @@ void updateFrame(float time)
             // camera_eye = make_float3(9.08f, 150.98f, 210.78f);
             camera_eye = camera_lookat + make_float3(sin(t), 0.4, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
         }
-        else if (time < 5)
+        else if (time < 4)
         {
             // 中距離
-            t = time - 1;
+            t = time;
             camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.01f * sinFbm3(t + 2.323);
             camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0) + 0.05f * sinFbm3(t + 5.42323);
 
             light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * t) + make_float3(30 * (t - 2.5), 0, 0);
             light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * t + 5.23);
         }
-        else
+        else if (time < 7)
         {
             t = time - 5;
             camera_eye = make_float3(-23.05f + 0.05 * t, -162.65f - t * 0.05, 298.98f) + 0.01f * sinFbm3(t + 5.42323);
             camera_lookat = make_float3(26.0f, -189.83f, 62.96f) + 0.01f * sinFbm3(t + 5.42323);
 
             camera_fov = lerp(10.0f, 30.0f, time / 5.0f);
+        }
+        else if(time < 9)
+        {
+            t = time - 7;
+            camera_eye = make_float3(-49.8, 36.14, 251.44) + 0.01 * sinFbm3(t + 2.323);
+            camera_lookat = make_float3(47.55, -31.94, -13.92) + make_float3(5 * (t - 2.5), 0, 0);
+            camera_fov = lerp(10.0f, 30.0f, t / 3.0f);
+        }
+        else if (time < 10)
+        {
+            t = time - 7;
+            camera_eye = make_float3(-49.8, 36.14, 281.44) + 0.01 * sinFbm3(t + 2.323);
+            camera_lookat = make_float3(47.55, -31.94, -13.92) + make_float3(5 * (t - 2.5), 0, 0);
+            camera_fov = 30;
         }
 
         // Menger用のトンネルの中央を通過するカメラワーク
@@ -2020,6 +2034,7 @@ int main(int argc, char** argv)
         else if (out_file.empty())
         {
             animate_begin_time = sutil::currentTime();
+            context["sample_per_launch"]->setUint(10);
             glutRun();
         }
         // 静止画モード
