@@ -45,7 +45,7 @@ rtBuffer<float4, 2> liner_buffer;
 rtBuffer<float4, 2> input_albedo_buffer;
 rtBuffer<float4, 2> input_normal_buffer;
 rtBuffer<float4, 2> liner_depth_buffer;
-
+rtBuffer<float4, 2> liner_depth_second_ray_buffer;
 
 
 __device__ inline float3 linear_to_sRGB(const float3& c)
@@ -114,11 +114,13 @@ RT_PROGRAM void pathtrace_camera()
     float3 albedo = make_float3(0.0f);
     float3 normal = make_float3(0.0f);
     float distance = 0.0f;
+    float distance_second_ray = 0.0f;
     unsigned int seed = tea<16>(screen.x * launch_index.y + launch_index.x, total_sample);
 
     if (frame_number > 1)
     {
         distance = liner_depth_buffer[launch_index].x;
+        distance_second_ray = liner_depth_second_ray_buffer[launch_index].x;
     }
 
     for (int i = 0; i < sample_per_launch; i++)
@@ -136,6 +138,7 @@ RT_PROGRAM void pathtrace_camera()
         prd.seed = seed;
         prd.depth = 0;
         prd.distance = distance;
+        prd.distance_second_ray = distance_second_ray;
 
         // Each iteration is a segment of the ray path.  The closest hit will
         // return new segments to be traced here.
@@ -144,6 +147,24 @@ RT_PROGRAM void pathtrace_camera()
             Ray ray = make_Ray(ray_origin, ray_direction, RADIANCE_RAY_TYPE, scene_epsilon, RT_DEFAULT_MAX);
             prd.wo = -ray.direction;
             rtTrace(top_object, ray, prd);
+
+            if (prd.depth == 0)
+            {
+                albedo += prd.albedo;
+                normal += prd.normal;
+
+                if (i == 0)
+                {
+                    distance = prd.distance;
+                }
+            }
+            else if (prd.depth == 1)
+            {
+                if (i == 0)
+                {
+                    distance_second_ray = prd.distance;
+                }
+            }
 
             if (prd.done || prd.depth >= max_depth)
             {
@@ -158,17 +179,6 @@ RT_PROGRAM void pathtrace_camera()
                     break;
                 prd.attenuation /= pcont;
             }*/
-
-            if (prd.depth == 0)
-            {
-                albedo += prd.albedo;
-                normal += prd.normal;
-
-                if (i == 0)
-                {
-                    distance = prd.distance;
-                }
-            }
 
             // Update ray data for the next path segment
             ray_origin = prd.origin;
@@ -217,6 +227,7 @@ RT_PROGRAM void pathtrace_camera()
         input_albedo_buffer[launch_index] = make_float4(pixel_albedo, 1.0f);
         input_normal_buffer[launch_index] = make_float4(pixel_normal, 1.0f);
         liner_depth_buffer[launch_index] = make_float4(distance, 0.0f, 0.0f, 1.0f);
+        liner_depth_second_ray_buffer[launch_index] = make_float4(distance_second_ray, 0.0f, 0.0f, 1.0f);
     }
 }
 
@@ -239,6 +250,7 @@ RT_PROGRAM void debug_camera()
     prd.seed = 0;
     prd.depth = 0;
     prd.distance = 0;
+    prd.distance_second_ray = 0;
 
     Ray ray = make_Ray(ray_origin, ray_direction, RADIANCE_RAY_TYPE, scene_epsilon, RT_DEFAULT_MAX);
     prd.wo = -ray.direction;
