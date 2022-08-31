@@ -69,6 +69,17 @@ __device__ inline float3 tonemap_acesFilm(const float3 x)
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
+__device__ inline float3 posteffect(float3 col)
+{
+    // fade in
+    col = lerp(col, make_float3(0), smoothstep(0.3, 0, time));
+
+    // fade out
+    col = lerp(col, make_float3(0), smoothstep(9.7, 10, time));
+
+    return col;
+}
+
 RT_PROGRAM void pathtrace_camera()
 {
     size_t2 screen = output_buffer.size();
@@ -163,6 +174,7 @@ RT_PROGRAM void pathtrace_camera()
     }
 
     float3 pixel_output = use_post_tonemap ? pixel_liner : linear_to_sRGB(tonemap_acesFilm((pixel_liner * tonemap_exposure)));
+    pixel_output = posteffect(pixel_output);
 
     // Save to buffer
     liner_buffer[launch_index] = make_float4(pixel_liner, 1.0);
