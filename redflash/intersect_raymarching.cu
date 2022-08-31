@@ -153,7 +153,7 @@ float map(float3 p)
     else
     {
         float scale = 100;
-        return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2 + 0.6 * sin(time + 6)), 2.8 + 0.1 * sin(time + 3)) * scale;
+        return dMenger((p - center) / scale, make_float3(1.2, 1.0, 1.2 + 0.6 * sin(time + 6.2)), 2.8 + 0.1 * sin(time + 3.2)) * scale;
     }
 }
 
