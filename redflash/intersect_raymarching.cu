@@ -200,12 +200,12 @@ float calcEdge(float3 p, float width)
     return edge;
 }
 
-RT_CALLABLE_PROGRAM void customMaterialProgram_Nop(MaterialParameter& mat, State& state)
+RT_CALLABLE_PROGRAM void materialAnimation_Nop(MaterialParameter& mat, State& state)
 {
     // nop
 }
 
-RT_CALLABLE_PROGRAM void customMaterialProgram_Raymarching(MaterialParameter& mat, State& state)
+RT_CALLABLE_PROGRAM void materialAnimation_Raymarching(MaterialParameter& mat, State& state)
 {
     if (time < 7) return;
 

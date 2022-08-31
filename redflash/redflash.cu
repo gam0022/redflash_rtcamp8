@@ -222,7 +222,7 @@ rtDeclareVariable(float, t_hit, rtIntersectionDistance, );
 rtBuffer<MaterialParameter> sysMaterialParameters;
 rtDeclareVariable(int, material_id, , );
 rtDeclareVariable(int, bsdf_id, , );
-rtDeclareVariable(int, material_custom_program_id, , );
+rtDeclareVariable(int, material_animation_program_id, , );
 
 rtDeclareVariable(int, sysNumberOfLights, , );
 rtBuffer<LightParameter> sysLightParameters;
@@ -231,7 +231,7 @@ rtDeclareVariable(int, lightMaterialId, , );
 rtBuffer< rtCallableProgramId<void(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Pdf;
 rtBuffer< rtCallableProgramId<void(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Sample;
 rtBuffer< rtCallableProgramId<float3(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Eval;
-rtBuffer< rtCallableProgramId<void(MaterialParameter& mat, State& state)> > prgs_MaterialCustom;
+rtBuffer< rtCallableProgramId<void(MaterialParameter& mat, State& state)> > prgs_MaterialAnimation;
 
 RT_PROGRAM void light_closest_hit()
 {
@@ -346,7 +346,7 @@ RT_PROGRAM void closest_hit()
     state.ffnormal = ffnormal;
 
     MaterialParameter mat = sysMaterialParameters[material_id];
-    prgs_MaterialCustom[material_custom_program_id](mat, state);
+    prgs_MaterialAnimation[material_animation_program_id](mat, state);
 
     current_prd.radiance += mat.emission * current_prd.attenuation;
     current_prd.wo = -ray.direction;

@@ -421,23 +421,23 @@ void setupBSDF(std::vector<std::string>& bsdf_paths)
     }
 }
 
-void setupCustomMaterialProgram(const char* ptx)
+void setupMaterialAnimationProgram(const char* ptx)
 {
-    std::string prefix = "customMaterialProgram_";
+    std::string prefix = "materialAnimation_";
     std::vector<std::string> prg_names = { "Nop", "Raymarching" };
     int prg_count = prg_names.size();
 
-    optix::Buffer buffer_CustomMaterial_prgs = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_PROGRAM_ID, prg_count);
-    int* CustomMaterial_prgs = (int*)buffer_CustomMaterial_prgs->map(0, RT_BUFFER_MAP_WRITE_DISCARD);
+    optix::Buffer buffer_MaterialAnimation_prgs = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_PROGRAM_ID, prg_count);
+    int* MaterialAnimation_prgs = (int*)buffer_MaterialAnimation_prgs->map(0, RT_BUFFER_MAP_WRITE_DISCARD);
 
     for (int i = 0; i < prg_count; ++i)
     {
         Program prg = context->createProgramFromPTXString(ptx, prefix + prg_names[i]);
-        CustomMaterial_prgs[i] = prg->getId();
+        MaterialAnimation_prgs[i] = prg->getId();
     }
 
-    buffer_CustomMaterial_prgs->unmap();
-    context["prgs_MaterialCustom"]->setBuffer(buffer_CustomMaterial_prgs);
+    buffer_MaterialAnimation_prgs->unmap();
+    context["prgs_MaterialAnimation"]->setBuffer(buffer_MaterialAnimation_prgs);
 }
 
 void createContext()
@@ -508,7 +508,7 @@ void createContext()
     pgram_intersection_raymarching = context->createProgramFromPTXString(ptx, "intersect");
 
     // Material Custom Program
-    setupCustomMaterialProgram(ptx);
+    setupMaterialAnimationProgram(ptx);
 
     // Sphere programs
     ptx = sutil::getPtxString(SAMPLE_NAME, "intersect_sphere.cu");
@@ -576,14 +576,14 @@ void setupPostprocessing()
 }
 
 void registerMaterial(GeometryInstance& gi, MaterialParameter& mat, 
-    MaterialCustomProgramType material_custom_program_id = MaterialCustomProgramType::Nop, bool isLight = false)
+    MaterialAnimationProgramType material_animation_program_id = MaterialAnimationProgramType::Nop, bool isLight = false)
 {
     materialParameters.push_back(mat);
     gi->setMaterialCount(1);
     gi->setMaterial(0, isLight ? light_material : common_material);
     gi["material_id"]->setInt(materialCount++);
     gi["bsdf_id"]->setInt(mat.bsdf);
-    gi["material_custom_program_id"]->setInt(material_custom_program_id);
+    gi["material_animation_program_id"]->setInt(material_animation_program_id);
 }
 
 void updateMaterialParameters()
@@ -675,7 +675,7 @@ GeometryGroup createGeometry()
     mat.albedo = make_float3(0.6f);
     mat.metallic = 0.8f;
     mat.roughness = 0.05f;
-    registerMaterial(gis.back(), mat, MaterialCustomProgramType::Raymarching);
+    registerMaterial(gis.back(), mat, MaterialAnimationProgramType::Raymarching);
 
     // Create shadow group (no light)
     GeometryGroup shadow_group = context->createGeometryGroup(gis.begin(), gis.end());
@@ -714,7 +714,7 @@ GeometryGroup createGeometryLight()
 
         MaterialParameter mat;
         mat.emission = light->emission;
-        registerMaterial(light_gis.back(), mat, MaterialCustomProgramType::Nop, true);
+        registerMaterial(light_gis.back(), mat, MaterialAnimationProgramType::Nop, true);
 
         ++index;
     }
