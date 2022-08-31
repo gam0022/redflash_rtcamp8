@@ -921,7 +921,7 @@ void updateFrame(float time)
             float ease = easeInOutCubic(t / 3);
             camera_eye = make_float3(-49.8, 36.14, 200.0) + make_float3(0.2, 0.1, 50) * ease + eye_shake;
             camera_lookat = make_float3(40.55, -31.94, -13.92) + target_shake;
-            camera_fov = lerp(5.0f, 20.0f, ease);
+            camera_fov = lerp(10.0f, 20.0f, ease);
 
             light_parameters[0].position = camera_eye + normalize(camera_eye - camera_lookat) * 8.0;
             vignetteIntensity = 1.3;
@@ -1062,7 +1062,7 @@ void glutDisplay()
     animate_time = sutil::currentTime() - animate_begin_time;
 
     // NOTE: デバッグ用に開始時間を調整。提出時にはコメントアウトする
-    //animate_time += 3.5;
+    animate_time += 7;
 
     // FPSカメラ移動
     {
