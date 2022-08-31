@@ -848,6 +848,7 @@ void setupCamera()
 // アニメーションの実装
 void updateFrame(float time)
 {
+    // NOTE: falseにすれば自由カメラになる
     bool update_camera = true;
     float t = time;
 
@@ -1058,7 +1059,6 @@ void glutDisplay()
         if (is_key_E_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
     }
 
-    // コメントアウトすれば自由カメラになる
     updateFrame(animate_time);
 
     updateCamera();

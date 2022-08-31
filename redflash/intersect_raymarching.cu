@@ -202,23 +202,24 @@ float calcEdge(float3 p, float width)
 
 RT_CALLABLE_PROGRAM void customMaterialProgram_Nop(MaterialParameter& mat, State& state)
 {
-
+    // nop
 }
 
 RT_CALLABLE_PROGRAM void customMaterialProgram_Raymarching(MaterialParameter& mat, State& state)
 {
     if (time < 7) return;
 
-
+    // MengerSpongeのシーンのEmissiveアニメーション
     float3 p = state.hitpoint;
     float edge = calcEdge(p, 0.02);
     mat.emission = make_float3(0.2, 0.2, 1) * pow(edge, 2.0f) * abs(sin(0.1 * p.z + 0.5 * time));
 
-    float bar = smoothstep(0.8, 1.0, sin(p.z + 2 * time));
-    mat.emission += bar * make_float3(0.2, 0.2, 20);
+    float bar = smoothstep(0.7, 1.0, sin(p.z + 2 * time));
+    if (state.normal.y > 0.8) bar = 0;
+    mat.emission += bar * make_float3(0.2, 0.2, 20) * 2;
 
-    mat.roughness = 0.3;
-    mat.metallic = 1.0;
+    mat.roughness = 0.005;
+    mat.metallic = 0.01;
     mat.albedo = make_float3(0.3);
 }
 
