@@ -1044,6 +1044,9 @@ void glutDisplay()
 
     animate_time = sutil::currentTime() - animate_begin_time;
 
+    // NOTE: デバッグ用に開始時間を調整。提出時にはコメントアウトする
+    animate_time += 7;
+
     // FPSカメラ移動
     {
         float speed = 5;
