@@ -575,7 +575,7 @@ void setupPostprocessing()
     postprocessing_needs_init = false;
 }
 
-void registerMaterial(GeometryInstance& gi, MaterialParameter& mat, 
+void registerMaterial(GeometryInstance& gi, MaterialParameter& mat,
     MaterialAnimationProgramType material_animation_program_id = MaterialAnimationProgramType::Nop, bool isLight = false)
 {
     materialParameters.push_back(mat);
@@ -851,12 +851,16 @@ void updateFrame(float time)
     // NOTE: falseにすれば自由カメラになる
     bool update_camera = true;
     float t = time;
+    float vignetteIntensity = 0.9;
 
     //time = 5.5;
 
     // 中距離
     light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * time) + make_float3(30 * (time - 2.5), 0, 0);
     light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * time + 5.23);
+
+    float3 eye_shake = 0.01f * sinFbm3(t + 2.323);
+    float3 target_shake = 0.001f * sinFbm3(t + 5.42323);
 
     if (update_camera)
     {
@@ -865,51 +869,62 @@ void updateFrame(float time)
 
         if (time < 2)
         {
-            // 中距離（右にライトが移動）
-            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.01f * sinFbm3(t + 2.323);
-            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0);
+            // ライトのアニメーション 中距離
+            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + eye_shake;
+            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0) + target_shake;
         }
         else if (time < 3)
         {
-            // Lucyに近づく
+            // ライトのアニメーション Lucyに近づく
             t = time * 0.05f;
             camera_lookat = make_float3(1.41f, 150.12f, 200.42f);
-            camera_eye = camera_lookat + make_float3(sin(t), 0.4 + t, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
+            camera_eye = camera_lookat + 10 * make_float3(sin(t), 0.4 + t, cos(t)) + eye_shake;
         }
         else if (time < 3.5)
         {
-            // 中距離（右にライトが移動）
+            // ライトのアニメーション 中距離（右にライトが移動）
             t = time;
-            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.01f * sinFbm3(t + 2.323);
-            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0) + 0.05f * sinFbm3(t + 5.42323);
+            camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + eye_shake;
+            camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0) + target_shake;
 
             light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * t) + make_float3(30 * (t - 2.5), 0, 0);
             light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * t + 5.23);
         }
         else if (time < 5)
         {
-            // Mandelboxの変形
-            t = time - 5;
-            camera_eye = make_float3(38.57, 156.56, 258.19) + 0.01 * sinFbm3(t + 2.323);
-            camera_lookat = make_float3(29.63, 20.64, -0.72) + make_float3(5 * (t - 2.5), 0, 0);
+            // Mandelboxのカメラ移動
+            t = 0.5 * (time - 3.5);
+            float3 e0 = make_float3(9.55f, 144.84f, 214.05f);
+            float3 e1 = make_float3(16.13, 191.42, 539.42);
+            float3 t0 = make_float3(1.60f, 149.38f, 200.70f);
 
-            //camera_fov = lerp(10.0f, 30.0f, time / 5.0f);
-            light_parameters[1].position = camera_eye + normalize(camera_eye - camera_lookat) * 8.0 + 4.0 * sinFbm3(0.3 * t + 5.23);
+            camera_eye = lerp(e0, e1, easeInOutCubic(t)) + eye_shake;
+            camera_lookat = t0 + target_shake;
+
+            light_parameters[0].position = camera_eye + normalize(camera_eye - camera_lookat) * 8.0;
+            vignetteIntensity = 0.6;
         }
         else if (time < 7)
         {
             // Mandelboxの変形
             t = time - 5;
-            camera_eye = make_float3(-100.96, 95.12 + 100 + 2 * t, 387.54) + 0.01 * sinFbm3(t + 2.323);
-            camera_lookat = make_float3(45.95, -58.26 + 100 + 2 * t, -194.11);
+            camera_eye = make_float3(-100.96, 95.12 + 100 + 2 * t, 387.54) + eye_shake;
+            camera_lookat = make_float3(45.95, -58.26 + 100 + 2 * t, -194.11) + target_shake;
+
+            light_parameters[0].position = camera_eye + normalize(camera_eye - camera_lookat) * 8.0;
+            vignetteIntensity = 0.6;
         }
-        else if(time < 10)
+        else if (time < 10)
         {
-            // MengerSponge
+            // MengerSpongeのEmissiveのアニメーション
             t = time - 7;
-            camera_eye = make_float3(-49.8, 36.14, 251.44) + 0.01 * sinFbm3(t + 2.323) + make_float3(t * 0.2, 0, 0);
-            camera_lookat = make_float3(37.55, -31.94, -13.92) + make_float3(5 * (t - 2.5), 0, 0);
-            camera_fov = lerp(10.0f, 30.0f, t / 3.0f);
+            float ease = easeInOutCubic(t / 3);
+            camera_eye = make_float3(-49.8, 36.14, 200.0) + make_float3(0.2, 0.1, 50) * ease + eye_shake;
+            camera_lookat = make_float3(40.55, -31.94, -13.92) + target_shake;
+            camera_fov = lerp(5.0f, 20.0f, ease);
+
+            light_parameters[0].position = camera_eye + normalize(camera_eye - camera_lookat) * 8.0;
+            vignetteIntensity = 1.3;
         }
     }
 
@@ -917,6 +932,7 @@ void updateFrame(float time)
 
     camera_changed = true;
     context["time"]->setFloat(time);
+    context["vignetteIntensity"]->setFloat(vignetteIntensity);
 }
 
 
@@ -1046,7 +1062,7 @@ void glutDisplay()
     animate_time = sutil::currentTime() - animate_begin_time;
 
     // NOTE: デバッグ用に開始時間を調整。提出時にはコメントアウトする
-    // animate_time += 7;
+    //animate_time += 3.5;
 
     // FPSカメラ移動
     {

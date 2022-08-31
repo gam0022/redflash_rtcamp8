@@ -18,6 +18,7 @@ rtDeclareVariable(rtObject, top_object, , );
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
 rtDeclareVariable(float, time, , );
+rtDeclareVariable(float, vignetteIntensity, , );
 
 //-----------------------------------------------------------------------------
 //
@@ -82,11 +83,11 @@ __device__ inline float2 pow_float2(float2 v, float a)
 }
 
 __device__ inline float vignette(float2 uv) {
-    const float vignetteIntensityion = 1.3;   // [0 3]
+    // const float vignetteIntensity = 1.3;   // [0 3]
     const float vignetteSmoothness = 1.5;  // [0 5]
     const float vignetteRoundness = 1;   // [0 1]
 
-    float2 d = abs_float2(uv - 0.5) * vignetteIntensityion;
+    float2 d = abs_float2(uv - 0.5) * vignetteIntensity;
     float roundness = (1.0 - vignetteRoundness) * 6.0 + vignetteRoundness;
     d = pow_float2(d, roundness);
     return powf(saturate(1.0 - dot(d, d)), vignetteSmoothness);
