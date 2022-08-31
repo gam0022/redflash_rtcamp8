@@ -17,6 +17,7 @@ rtDeclareVariable(float, scene_epsilon, , );
 rtDeclareVariable(rtObject, top_object, , );
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
+rtDeclareVariable(float, time, , );
 
 //-----------------------------------------------------------------------------
 //
@@ -161,7 +162,7 @@ RT_PROGRAM void pathtrace_camera()
         // pixel_normal = lerp(make_float3(input_normal_buffer[launch_index]), pixel_normal, a);
     }
 
-    float3 pixel_output = use_post_tonemap ? pixel_liner : linear_to_sRGB(tonemap_acesFilm(pixel_liner * tonemap_exposure));
+    float3 pixel_output = use_post_tonemap ? pixel_liner : linear_to_sRGB(tonemap_acesFilm((pixel_liner * tonemap_exposure)));
 
     // Save to buffer
     liner_buffer[launch_index] = make_float4(pixel_liner, 1.0);
@@ -221,6 +222,7 @@ rtDeclareVariable(float, t_hit, rtIntersectionDistance, );
 rtBuffer<MaterialParameter> sysMaterialParameters;
 rtDeclareVariable(int, material_id, , );
 rtDeclareVariable(int, bsdf_id, , );
+rtDeclareVariable(int, material_animation_program_id, , );
 
 rtDeclareVariable(int, sysNumberOfLights, , );
 rtBuffer<LightParameter> sysLightParameters;
@@ -229,6 +231,7 @@ rtDeclareVariable(int, lightMaterialId, , );
 rtBuffer< rtCallableProgramId<void(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Pdf;
 rtBuffer< rtCallableProgramId<void(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Sample;
 rtBuffer< rtCallableProgramId<float3(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Eval;
+rtBuffer< rtCallableProgramId<void(MaterialParameter& mat, State& state)> > prgs_MaterialAnimation;
 
 RT_PROGRAM void light_closest_hit()
 {
@@ -342,8 +345,8 @@ RT_PROGRAM void closest_hit()
     state.normal = world_shading_normal;
     state.ffnormal = ffnormal;
 
-    // FIXME: materialCustomProgramId みたいな名前で関数ポインタを渡して、パラメータをプロシージャルにセットしたい
     MaterialParameter mat = sysMaterialParameters[material_id];
+    prgs_MaterialAnimation[material_animation_program_id](mat, state);
 
     current_prd.radiance += mat.emission * current_prd.attenuation;
     current_prd.wo = -ray.direction;
@@ -419,7 +422,10 @@ RT_PROGRAM void envmap_miss()
     float phi = M_PIf * 0.5f - acosf(ray.direction.y);
     float u = (theta + M_PIf) * (0.5f * M_1_PIf);
     float v = 0.5f * (1.0f + sin(phi));
-    current_prd.radiance += make_float3(tex2D(envmap, u, v)) * current_prd.attenuation;
+    
+    float intensity = time < 7 ? 1 : 0.2;
+    current_prd.radiance += make_float3(tex2D(envmap, u, v)) * current_prd.attenuation * intensity;
+
     current_prd.albedo = make_float3(0.0f);
     current_prd.normal = -ray.direction;
     current_prd.done = true;

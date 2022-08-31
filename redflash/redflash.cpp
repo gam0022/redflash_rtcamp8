@@ -56,8 +56,8 @@ const char* const SAMPLE_NAME = "redflash";
 Context context = 0;
 
 // 起動オプションで設定するパラメーター
-int width = 1920 / 4;
-int height = 1080 / 4;
+int width = 1920 / 2;
+int height = 1080 / 2;
 bool use_pbo = true;
 bool flag_debug = false;
 
@@ -421,6 +421,25 @@ void setupBSDF(std::vector<std::string>& bsdf_paths)
     }
 }
 
+void setupMaterialAnimationProgram(const char* ptx)
+{
+    std::string prefix = "materialAnimation_";
+    std::vector<std::string> prg_names = { "Nop", "Raymarching" };
+    int prg_count = prg_names.size();
+
+    optix::Buffer buffer_MaterialAnimation_prgs = context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_PROGRAM_ID, prg_count);
+    int* MaterialAnimation_prgs = (int*)buffer_MaterialAnimation_prgs->map(0, RT_BUFFER_MAP_WRITE_DISCARD);
+
+    for (int i = 0; i < prg_count; ++i)
+    {
+        Program prg = context->createProgramFromPTXString(ptx, prefix + prg_names[i]);
+        MaterialAnimation_prgs[i] = prg->getId();
+    }
+
+    buffer_MaterialAnimation_prgs->unmap();
+    context["prgs_MaterialAnimation"]->setBuffer(buffer_MaterialAnimation_prgs);
+}
+
 void createContext()
 {
     context = Context::create();
@@ -488,6 +507,9 @@ void createContext()
     pgram_bounding_box_raymarching = context->createProgramFromPTXString(ptx, "bounds");
     pgram_intersection_raymarching = context->createProgramFromPTXString(ptx, "intersect");
 
+    // Material Custom Program
+    setupMaterialAnimationProgram(ptx);
+
     // Sphere programs
     ptx = sutil::getPtxString(SAMPLE_NAME, "intersect_sphere.cu");
     pgram_bounding_box_sphere = context->createProgramFromPTXString(ptx, "bounds");
@@ -553,13 +575,15 @@ void setupPostprocessing()
     postprocessing_needs_init = false;
 }
 
-void registerMaterial(GeometryInstance& gi, MaterialParameter& mat, bool isLight = false)
+void registerMaterial(GeometryInstance& gi, MaterialParameter& mat, 
+    MaterialAnimationProgramType material_animation_program_id = MaterialAnimationProgramType::Nop, bool isLight = false)
 {
     materialParameters.push_back(mat);
     gi->setMaterialCount(1);
     gi->setMaterial(0, isLight ? light_material : common_material);
-    gi["bsdf_id"]->setInt(mat.bsdf);
     gi["material_id"]->setInt(materialCount++);
+    gi["bsdf_id"]->setInt(mat.bsdf);
+    gi["material_animation_program_id"]->setInt(material_animation_program_id);
 }
 
 void updateMaterialParameters()
@@ -651,7 +675,7 @@ GeometryGroup createGeometry()
     mat.albedo = make_float3(0.6f);
     mat.metallic = 0.8f;
     mat.roughness = 0.05f;
-    registerMaterial(gis.back(), mat);
+    registerMaterial(gis.back(), mat, MaterialAnimationProgramType::Raymarching);
 
     // Create shadow group (no light)
     GeometryGroup shadow_group = context->createGeometryGroup(gis.begin(), gis.end());
@@ -661,21 +685,12 @@ GeometryGroup createGeometry()
 
 GeometryGroup createGeometryLight()
 {
-    /*{
-        LightParameter light;
-        light.lightType = SPHERE;
-        light.position = make_float3(50, 310, 50);
-        light.radius = 10.0f;
-        light.emission = make_float3(1.0);
-        lightParameters.push_back(light);
-    }*/
-
     {
         LightParameter light;
         light.lightType = SPHERE;
         light.position = make_float3(0.01f, 166.787f, 190.00f);
         light.radius = 1.0f;
-        light.emission = make_float3(100.0f, 100.00f, 100.00f);
+        light.emission = make_float3(20.0f, 10.00f, 5.00f) * 2;
         light_parameters.push_back(light);
     }
 
@@ -684,7 +699,7 @@ GeometryGroup createGeometryLight()
         light.lightType = SPHERE;
         light.position = make_float3(3.8f, 161.4f, 200.65f);
         light.radius = 0.5f;
-        light.emission = make_float3(100.0f, 100.00f, 100.00f);
+        light.emission = make_float3(20.0f, 10.00f, 5.00f) * 2;
         light_parameters.push_back(light);
     }
 
@@ -699,7 +714,7 @@ GeometryGroup createGeometryLight()
 
         MaterialParameter mat;
         mat.emission = light->emission;
-        registerMaterial(light_gis.back(), mat, true);
+        registerMaterial(light_gis.back(), mat, MaterialAnimationProgramType::Nop, true);
 
         ++index;
     }
@@ -726,17 +741,12 @@ float sinFbm(float time)
 
 float3 sinFbm3(float time)
 {
-    float TAU = 6.28318530718;
     float t = time * TAU;
     return make_float3(sinFbm(t), sinFbm(t + 2), sinFbm(t + 3));
 }
 
 void updateGeometryLight(float time)
 {
-    // Menger用のトンネルの中央を通過するカメラワーク
-    // light_parameters[0].position = camera_eye - normalize(camera_lookat - camera_eye) * 1.5f;
-    // light_parameters[1].position = camera_lookat + 1 * sinFbm3(0.3 * time);
-
     int index = 0;
     for (auto light = light_parameters.begin(); light != light_parameters.end(); ++light)
     {
@@ -785,8 +795,8 @@ void setupScene()
 
     // Envmap
     const float3 default_color = make_float3(1.0f, 1.0f, 1.0f);
-    //const std::string texpath = resolveDataPath("GrandCanyon_C_YumaPoint/GCanyon_C_YumaPoint_3k.hdr");
-    const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Ref.hdr");
+    const std::string texpath = resolveDataPath("GrandCanyon_C_YumaPoint/GCanyon_C_YumaPoint_3k.hdr");
+    //const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Ref.hdr");
     //const std::string texpath = resolveDataPath("Ice_Lake/Ice_Lake_Env.hdr");
     //const std::string texpath = resolveDataPath("Desert_Highway/Road_to_MonumentValley_Env.hdr");
     context["envmap"]->setTextureSampler(sutil::loadTexture(context, texpath, default_color));
@@ -838,8 +848,11 @@ void setupCamera()
 // アニメーションの実装
 void updateFrame(float time)
 {
+    // NOTE: falseにすれば自由カメラになる
     bool update_camera = true;
     float t = time;
+
+    //time = 5.5;
 
     // 中距離
     light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * time) + make_float3(30 * (time - 2.5), 0, 0);
@@ -848,11 +861,11 @@ void updateFrame(float time)
     if (update_camera)
     {
         camera_up = make_float3(0.0f, 1.0f, 0.0f);
-        camera_fov = 35.0f;// lerp(35.0f, 1.0f, time / 5.0f);
+        camera_fov = 35.0f;
 
         if (time < 2)
         {
-            // 中距離
+            // 中距離（右にライトが移動）
             camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.01f * sinFbm3(t + 2.323);
             camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0);
         }
@@ -861,31 +874,43 @@ void updateFrame(float time)
             // Lucyに近づく
             t = time * 0.05f;
             camera_lookat = make_float3(1.41f, 150.12f, 200.42f);
-            // camera_eye = make_float3(9.08f, 150.98f, 210.78f);
-            camera_eye = camera_lookat + make_float3(sin(t), 0.4, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
+            camera_eye = camera_lookat + make_float3(sin(t), 0.4 + t, cos(t)) * 10 + 0.05f * sinFbm3(t + 2.323);
         }
-        else if (time < 5)
+        else if (time < 3.5)
         {
-            // 中距離
-            t = time - 1;
+            // 中距離（右にライトが移動）
+            t = time;
             camera_eye = lerp(make_float3(1.65f, 196.01f, 287.97f), make_float3(-7.06f, 76.34f, 26.96f), t * 0.01f) + 0.01f * sinFbm3(t + 2.323);
             camera_lookat = make_float3(0.01f, 146.787f, 190.00f) + make_float3(5 * (t - 2.5), 0, 0) + 0.05f * sinFbm3(t + 5.42323);
 
             light_parameters[0].position = make_float3(0.01f, 156.787f, 220.00f) + sinFbm3(0.3 * t) + make_float3(30 * (t - 2.5), 0, 0);
             light_parameters[1].position = make_float3(3.8f, 161.4f, 200.65f) + 4.0 * sinFbm3(0.3 * t + 5.23);
         }
-        else
+        else if (time < 5)
         {
+            // Mandelboxの変形
             t = time - 5;
-            camera_eye = make_float3(-23.05f + 0.05 * t, -162.65f - t * 0.05, 298.98f) + 0.01f * sinFbm3(t + 5.42323);
-            camera_lookat = make_float3(26.0f, -189.83f, 62.96f) + 0.01f * sinFbm3(t + 5.42323);
+            camera_eye = make_float3(38.57, 156.56, 258.19) + 0.01 * sinFbm3(t + 2.323);
+            camera_lookat = make_float3(29.63, 20.64, -0.72) + make_float3(5 * (t - 2.5), 0, 0);
 
-            camera_fov = lerp(10.0f, 30.0f, time / 5.0f);
+            //camera_fov = lerp(10.0f, 30.0f, time / 5.0f);
+            light_parameters[1].position = camera_eye + normalize(camera_eye - camera_lookat) * 8.0 + 4.0 * sinFbm3(0.3 * t + 5.23);
         }
-
-        // Menger用のトンネルの中央を通過するカメラワーク
-        // camera_lookat = make_float3(0.0f, 0.0, 290.4f - 10 * time);
-        // camera_eye = camera_lookat + make_float3(1.0f * sin(time), 1.0f * cos(time), 30.0f * cos(time * 0.5)) + 0.1 * sinFbm3(0.1 * time);
+        else if (time < 7)
+        {
+            // Mandelboxの変形
+            t = time - 5;
+            camera_eye = make_float3(-100.96, 95.12 + 100 + 2 * t, 387.54) + 0.01 * sinFbm3(t + 2.323);
+            camera_lookat = make_float3(45.95, -58.26 + 100 + 2 * t, -194.11);
+        }
+        else if(time < 10)
+        {
+            // MengerSponge
+            t = time - 7;
+            camera_eye = make_float3(-49.8, 36.14, 251.44) + 0.01 * sinFbm3(t + 2.323) + make_float3(t * 0.2, 0, 0);
+            camera_lookat = make_float3(37.55, -31.94, -13.92) + make_float3(5 * (t - 2.5), 0, 0);
+            camera_fov = lerp(10.0f, 30.0f, t / 3.0f);
+        }
     }
 
     updateGeometryLight(time);
@@ -1020,6 +1045,9 @@ void glutDisplay()
 
     animate_time = sutil::currentTime() - animate_begin_time;
 
+    // NOTE: デバッグ用に開始時間を調整。提出時にはコメントアウトする
+    animate_time += 7;
+
     // FPSカメラ移動
     {
         float speed = 5;
@@ -1031,7 +1059,6 @@ void glutDisplay()
         if (is_key_E_pressed) fpsCameraMove(make_float3(0, 1, 0), speed);
     }
 
-    // コメントアウトすれば自由カメラになる
     updateFrame(animate_time);
 
     updateCamera();
@@ -1152,14 +1179,6 @@ void glutDisplay()
         static unsigned frame_count = 0;
         sutil::displayFps(frame_count++);
     }
-
-    /*
-    {
-        static char total_sample_text[32];
-        sprintf(total_sample_text, "total_sample:   %d", total_sample);
-        sutil::displayText(total_sample_text, 10, 80);
-    }
-    */
 
     {
         static char animate_time_text[32];
@@ -1996,6 +2015,7 @@ int main(int argc, char** argv)
         else if (out_file.empty())
         {
             animate_begin_time = sutil::currentTime();
+            context["sample_per_launch"]->setUint(10);
             glutRun();
         }
         // 静止画モード
