@@ -9,7 +9,7 @@ using namespace optix;
 static __host__ __device__ __inline__ float powerHeuristic(float a, float b)
 {
     float t = a * a;
-    return t / (b*b + t);
+    return t / (b * b + t);
 }
 
 // Scene wide variables
@@ -18,6 +18,7 @@ rtDeclareVariable(rtObject, top_object, , );
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
 rtDeclareVariable(float, time, , );
+rtDeclareVariable(float, vignetteIntensity, , );
 
 //-----------------------------------------------------------------------------
 //
@@ -45,6 +46,8 @@ rtBuffer<float4, 2> input_albedo_buffer;
 rtBuffer<float4, 2> input_normal_buffer;
 rtBuffer<float4, 2> liner_depth_buffer;
 
+
+
 __device__ inline float3 linear_to_sRGB(const float3& c)
 {
     const float kInvGamma = 1.0f / 2.2f;
@@ -69,6 +72,41 @@ __device__ inline float3 tonemap_acesFilm(const float3 x)
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
+__device__ inline float2 abs_float2(float2 v)
+{
+    return make_float2(abs(v.x), abs(v.y));
+}
+
+__device__ inline float2 pow_float2(float2 v, float a)
+{
+    return make_float2(powf(v.x, a), powf(v.y, a));
+}
+
+__device__ inline float vignette(float2 uv) {
+    // const float vignetteIntensity = 1.3;   // [0 3]
+    const float vignetteSmoothness = 1.5;  // [0 5]
+    const float vignetteRoundness = 1;   // [0 1]
+
+    float2 d = abs_float2(uv - 0.5) * vignetteIntensity;
+    float roundness = (1.0 - vignetteRoundness) * 6.0 + vignetteRoundness;
+    d = pow_float2(d, roundness);
+    return powf(saturate(1.0 - dot(d, d)), vignetteSmoothness);
+}
+
+__device__ inline float3 posteffect(float3 col, float2 uv)
+{
+    // vignette
+    col *= vignette(uv);
+
+    // fade in
+    col = lerp(col, make_float3(0), smoothstep(0.3, 0, time));
+
+    // fade out
+    col = lerp(col, make_float3(0), smoothstep(9.7, 10, time));
+
+    return col;
+}
+
 RT_PROGRAM void pathtrace_camera()
 {
     size_t2 screen = output_buffer.size();
@@ -86,9 +124,9 @@ RT_PROGRAM void pathtrace_camera()
     for (int i = 0; i < sample_per_launch; i++)
     {
         float2 subpixel_jitter = make_float2(rnd(seed) - 0.5f, rnd(seed) - 0.5f);
-        float2 d = (make_float2(launch_index) + subpixel_jitter) / make_float2(screen) * 2.f - 1.f;
+        float2 uv = (make_float2(launch_index) + subpixel_jitter) / make_float2(screen) * 2.f - 1.f;
         float3 ray_origin = eye;
-        float3 ray_direction = normalize(d.x*U + d.y*V + W);
+        float3 ray_direction = normalize(uv.x * U + uv.y * V + W);
 
         // Initialze per-ray data
         PerRayData_pathtrace prd;
@@ -164,6 +202,10 @@ RT_PROGRAM void pathtrace_camera()
 
     float3 pixel_output = use_post_tonemap ? pixel_liner : linear_to_sRGB(tonemap_acesFilm((pixel_liner * tonemap_exposure)));
 
+    // posteffect
+    float2 uv = make_float2(launch_index) / make_float2(screen);
+    pixel_output = posteffect(pixel_output, uv);
+
     // Save to buffer
     liner_buffer[launch_index] = make_float4(pixel_liner, 1.0);
     output_buffer[launch_index] = make_float4(pixel_output, 1.0);
@@ -228,9 +270,9 @@ rtDeclareVariable(int, sysNumberOfLights, , );
 rtBuffer<LightParameter> sysLightParameters;
 rtDeclareVariable(int, lightMaterialId, , );
 
-rtBuffer< rtCallableProgramId<void(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Pdf;
-rtBuffer< rtCallableProgramId<void(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Sample;
-rtBuffer< rtCallableProgramId<float3(MaterialParameter &mat, State &state, PerRayData_pathtrace &prd)> > prgs_BSDF_Eval;
+rtBuffer< rtCallableProgramId<void(MaterialParameter& mat, State& state, PerRayData_pathtrace& prd)> > prgs_BSDF_Pdf;
+rtBuffer< rtCallableProgramId<void(MaterialParameter& mat, State& state, PerRayData_pathtrace& prd)> > prgs_BSDF_Sample;
+rtBuffer< rtCallableProgramId<float3(MaterialParameter& mat, State& state, PerRayData_pathtrace& prd)> > prgs_BSDF_Eval;
 rtBuffer< rtCallableProgramId<void(MaterialParameter& mat, State& state)> > prgs_MaterialAnimation;
 
 RT_PROGRAM void light_closest_hit()
@@ -271,7 +313,7 @@ RT_FUNCTION float3 UniformSampleSphere(float u1, float u2)
     return make_float3(x, y, z);
 }
 
-RT_CALLABLE_PROGRAM void sphere_sample(LightParameter &light, PerRayData_pathtrace &prd, LightSample &sample)
+RT_CALLABLE_PROGRAM void sphere_sample(LightParameter& light, PerRayData_pathtrace& prd, LightSample& sample)
 {
     const float r1 = rnd(prd.seed);
     const float r2 = rnd(prd.seed);
@@ -280,7 +322,7 @@ RT_CALLABLE_PROGRAM void sphere_sample(LightParameter &light, PerRayData_pathtra
     sample.emission = light.emission * sysNumberOfLights;
 }
 
-RT_FUNCTION float3 DirectLight(MaterialParameter &mat, State &state)
+RT_FUNCTION float3 DirectLight(MaterialParameter& mat, State& state)
 {
     //Pick a light to sample
     int index = optix::clamp(static_cast<int>(floorf(rnd(current_prd.seed) * sysNumberOfLights)), 0, sysNumberOfLights - 1);
@@ -422,7 +464,7 @@ RT_PROGRAM void envmap_miss()
     float phi = M_PIf * 0.5f - acosf(ray.direction.y);
     float u = (theta + M_PIf) * (0.5f * M_1_PIf);
     float v = 0.5f * (1.0f + sin(phi));
-    
+
     float intensity = time < 7 ? 1 : 0.2;
     current_prd.radiance += make_float3(tex2D(envmap, u, v)) * current_prd.attenuation * intensity;
 
