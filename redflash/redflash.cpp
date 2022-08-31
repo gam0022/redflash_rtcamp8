@@ -314,6 +314,11 @@ Buffer getLinerDepthBuffer()
     return context["liner_depth_buffer"]->getBuffer();
 }
 
+Buffer getLinerDepthSecondRayBuffer()
+{
+    return context["liner_depth_second_ray_buffer"]->getBuffer();
+}
+
 
 void destroyContext()
 {
@@ -464,6 +469,9 @@ void createContext()
 
     Buffer liner_depth_buffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
     context["liner_depth_buffer"]->set(liner_depth_buffer);
+
+    Buffer liner_depth_second_ray_buffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
+    context["liner_depth_second_ray_buffer"]->set(liner_depth_second_ray_buffer);
 
     Buffer tonemappedBuffer = sutil::createInputOutputBuffer(context, RT_FORMAT_FLOAT4, width, height, use_pbo);
     context["tonemapped_buffer"]->set(tonemappedBuffer);
@@ -1131,8 +1139,19 @@ void glutDisplay()
     case 4:
     {
         bufferInfo = "Normals";
-        Buffer normalBuffer = getNormalBuffer();
-        sutil::displayBufferGL(normalBuffer);
+        sutil::displayBufferGL(getNormalBuffer());
+        break;
+    }
+    case 5:
+    {
+        bufferInfo = "Depth";
+        sutil::displayBufferGL(getLinerDepthBuffer());
+        break;
+    }
+    case 6:
+    {
+        bufferInfo = "Depth Second Ray";
+        sutil::displayBufferGL(getLinerDepthSecondRayBuffer());
         break;
     }
     default:
@@ -1302,7 +1321,7 @@ void glutKeyboardPress(unsigned char k, int x, int y)
     case('b'):
     {
         showBuffer++;
-        if (showBuffer > 5) showBuffer = 1;
+        if (showBuffer > 7) showBuffer = 5;
         break;
     }
     case('r'):
@@ -1542,6 +1561,7 @@ void glutResize(int w, int h)
     sutil::resizeBuffer(getAlbedoBuffer(), width, height);
     sutil::resizeBuffer(getNormalBuffer(), width, height);
     sutil::resizeBuffer(getLinerDepthBuffer(), width, height);
+    sutil::resizeBuffer(getLinerDepthSecondRayBuffer(), width, height);
     sutil::resizeBuffer(denoisedBuffer, width, height);
     postprocessing_needs_init = true;
 

@@ -233,6 +233,24 @@ RT_PROGRAM void intersect(int primIdx)
     {
         t = max(current_prd.distance, t);
     }
+    else if (current_prd.depth == 1)
+    {
+        t = max(current_prd.distance_second_ray, t);
+
+        for (int i = 0; i < 3; i++)
+        {
+            p = ray.origin + t * ray.direction;
+            d = map(p);
+            if (d > 0)
+            {
+                break;
+            }
+            else
+            {
+                t *= 0.5;
+            }
+        }
+    }
 
     for (int i = 0; i < 300; i++)
     {
