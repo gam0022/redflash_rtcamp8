@@ -231,12 +231,8 @@ RT_PROGRAM void intersect(int primIdx)
     float t = ray.tmin, d = 0.0;
     float3 p = ray.origin;
 
-    // 前回のDepthをつかってレイを事前に進めてしまう高速化
-    // プライマリレイにしか使えない
-    if (current_prd.depth == 0)
-    {
-        t = max(current_prd.distance, t);
-    }
+    // 最適化
+    t = max(current_prd.distance - 0.3, t);
 
     int i = 0;
 
@@ -245,23 +241,16 @@ RT_PROGRAM void intersect(int primIdx)
     {
         p = ray.origin + t * ray.direction;
         d = map(p);
-
+        t += d;
         eps = scene_epsilon * t;
         if (abs(d) < eps || t > ray.tmax)
         {
             break;
         }
-
-        t += d;
     }
 
     if (t < ray.tmax && rtPotentialIntersection(t))
     {
-        /*if (launch_index.x == 100 && launch_index.y == 100 && current_prd.depth == 0)
-        {
-            printf("time: %f, i: %d, d: %f\n", time, i, d);
-        }*/
-
         shading_normal = geometric_normal = calcNormal(p, map, scene_epsilon);
         texcoord = make_float3(p.x, p.y, 0);
         rtReportIntersection(0);
