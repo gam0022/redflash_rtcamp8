@@ -113,7 +113,7 @@ RT_PROGRAM void pathtrace_camera()
     float3 result = make_float3(0.0f);
     float3 albedo = make_float3(0.0f);
     float3 normal = make_float3(0.0f);
-    float distance = 0.0f;
+    float distance = -1.0f;
     unsigned int seed = tea<16>(screen.x * launch_index.y + launch_index.x, total_sample);
 
     if (frame_number > 1)
@@ -145,6 +145,17 @@ RT_PROGRAM void pathtrace_camera()
             prd.wo = -ray.direction;
             rtTrace(top_object, ray, prd);
 
+            if (prd.depth == 0)
+            {
+                albedo += prd.albedo;
+                normal += prd.normal;
+
+                if (i == 0)
+                {
+                    distance = prd.distance;
+                }
+            }
+
             if (prd.done || prd.depth >= max_depth)
             {
                 break;
@@ -158,17 +169,6 @@ RT_PROGRAM void pathtrace_camera()
                     break;
                 prd.attenuation /= pcont;
             }*/
-
-            if (prd.depth == 0)
-            {
-                albedo += prd.albedo;
-                normal += prd.normal;
-
-                if (i == 0)
-                {
-                    distance = prd.distance;
-                }
-            }
 
             // Update ray data for the next path segment
             ray_origin = prd.origin;
@@ -394,7 +394,11 @@ RT_PROGRAM void closest_hit()
     current_prd.wo = -ray.direction;
     current_prd.albedo = mat.albedo;
     current_prd.normal = ffnormal;
-    current_prd.distance = t_hit;
+
+    if (current_prd.depth == 0)
+    {
+        current_prd.distance = t_hit;
+    }
 
     // FIXME: Sample‚É‚à‚Á‚Ä‚¢‚­
     current_prd.origin = hitpoint;
@@ -471,4 +475,5 @@ RT_PROGRAM void envmap_miss()
     current_prd.albedo = make_float3(0.0f);
     current_prd.normal = -ray.direction;
     current_prd.done = true;
+    current_prd.distance = 99999999;
 }

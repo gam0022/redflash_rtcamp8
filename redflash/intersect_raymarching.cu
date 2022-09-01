@@ -229,12 +229,18 @@ RT_PROGRAM void intersect(int primIdx)
     float t = ray.tmin, d = 0.0;
     float3 p = ray.origin;
 
+    int iteration = 300;
+
     if (current_prd.depth == 0)
     {
-        t = max(current_prd.distance, t);
+        if (current_prd.distance > t && current_prd.distance > 0)
+        {
+            t = current_prd.distance;
+            iteration = 1;
+        }
     }
 
-    for (int i = 0; i < 300; i++)
+    for (int i = 0; i < iteration; i++)
     {
         p = ray.origin + t * ray.direction;
         d = map(p);
