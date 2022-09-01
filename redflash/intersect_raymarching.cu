@@ -223,31 +223,45 @@ RT_CALLABLE_PROGRAM void materialAnimation_Raymarching(MaterialParameter& mat, S
     mat.albedo = make_float3(0.8);
 }
 
+rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
+
 RT_PROGRAM void intersect(int primIdx)
 {
     float eps;
     float t = ray.tmin, d = 0.0;
     float3 p = ray.origin;
 
+    // 前回のDepthをつかってレイを事前に進めてしまう高速化
+    // プライマリレイにしか使えない
     if (current_prd.depth == 0)
     {
         t = max(current_prd.distance, t);
     }
 
-    for (int i = 0; i < 300; i++)
+    int i = 0;
+
+    const int iteration = 300;
+    for (i = 0; i < iteration; i++)
     {
         p = ray.origin + t * ray.direction;
         d = map(p);
-        t += d;
+
         eps = scene_epsilon * t;
         if (abs(d) < eps || t > ray.tmax)
         {
             break;
         }
+
+        t += d;
     }
 
     if (t < ray.tmax && rtPotentialIntersection(t))
     {
+        /*if (launch_index.x == 100 && launch_index.y == 100 && current_prd.depth == 0)
+        {
+            printf("time: %f, i: %d, d: %f\n", time, i, d);
+        }*/
+
         shading_normal = geometric_normal = calcNormal(p, map, scene_epsilon);
         texcoord = make_float3(p.x, p.y, 0);
         rtReportIntersection(0);

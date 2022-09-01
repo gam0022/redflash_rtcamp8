@@ -1135,6 +1135,12 @@ void glutDisplay()
         sutil::displayBufferGL(normalBuffer);
         break;
     }
+    case 5:
+    {
+        bufferInfo = "Depth";
+        sutil::displayBufferGL(getLinerDepthBuffer());
+        break;
+    }
     default:
         switch (denoiseMode)
         {
