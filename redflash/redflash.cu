@@ -118,7 +118,7 @@ RT_PROGRAM void pathtrace_camera()
 
     if (frame_number > 1)
     {
-        distance = liner_depth_buffer[launch_index].x;
+        //distance = liner_depth_buffer[launch_index].x;
     }
 
     for (int i = 0; i < sample_per_launch; i++)

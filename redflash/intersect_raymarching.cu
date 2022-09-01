@@ -223,24 +223,21 @@ RT_CALLABLE_PROGRAM void materialAnimation_Raymarching(MaterialParameter& mat, S
     mat.albedo = make_float3(0.8);
 }
 
+rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
+
 RT_PROGRAM void intersect(int primIdx)
 {
     float eps;
     float t = ray.tmin, d = 0.0;
     float3 p = ray.origin;
 
-    int iteration = 300;
+    // Å“K‰»
+    t = max(current_prd.distance - 0.3, t);
 
-    if (current_prd.depth == 0)
-    {
-        if (current_prd.distance > t && current_prd.distance > 0)
-        {
-            t = current_prd.distance;
-            iteration = 1;
-        }
-    }
+    int i = 0;
 
-    for (int i = 0; i < iteration; i++)
+    const int iteration = 300;
+    for (i = 0; i < iteration; i++)
     {
         p = ray.origin + t * ray.direction;
         d = map(p);
