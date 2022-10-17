@@ -49,7 +49,11 @@ Won 5th prize at [レイトレ合宿8](https://sites.google.com/view/raytracingc
 [YouTube](https://www.youtube.com/watch?v=c7JqEpaR658)
 
 ![light_animation_960](https://user-images.githubusercontent.com/759115/196082478-7956c4f1-b433-49e5-87f8-38e2db83843c.gif)
+
+![zoom-out_960](https://user-images.githubusercontent.com/759115/196172482-8bf54473-6e84-4e36-b167-b3c665d29761.gif)
+
 ![raymarching-animation_960](https://user-images.githubusercontent.com/759115/196082497-03638681-b194-43c2-b8e1-32fd8b1cf823.gif)
+
 ![menger](https://user-images.githubusercontent.com/759115/196082998-f5fba5ec-21e9-4ae9-a4e2-5cf18127f081.gif)
 
 
