@@ -232,7 +232,10 @@ RT_PROGRAM void intersect(int primIdx)
     float3 p = ray.origin;
 
     // ç≈ìKâª
-    t = max(current_prd.distance - 0.3, t);
+    if (current_prd.depth == 0)
+    {
+        t = max(current_prd.distance - 0.3, t);
+    }
 
     int i = 0;
 
