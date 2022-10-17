@@ -42,6 +42,16 @@ The actual implementation is in the [redflash](https://github.com/gam0022/redfla
 
 ## Gallery
 
+### RaytracingCamp8 Submission Version / レイトレ合宿8 提出バージョン
+
+Won 5th prize at [レイトレ合宿8](https://sites.google.com/view/raytracingcamp8/).
+
+[YouTube](https://www.youtube.com/watch?v=c7JqEpaR658)
+
+![light_animation_960](https://user-images.githubusercontent.com/759115/196082478-7956c4f1-b433-49e5-87f8-38e2db83843c.gif)
+![raymarching-animation_960](https://user-images.githubusercontent.com/759115/196082497-03638681-b194-43c2-b8e1-32fd8b1cf823.gif)
+![menger_960](https://gam0022.net/images/posts/2022-09-26-rtcamp8/menger_960.gif)
+
 ### RaytracingCamp7 Submission Version / レイトレ合宿7 提出バージョン
 
 Won 4th prize at [レイトレ合宿7](https://sites.google.com/site/raytracingcamp7/).
@@ -61,5 +71,6 @@ Won 4th prize at [レイトレ合宿7](https://sites.google.com/site/raytracingc
 
 ## Links
 
+- [レイトレ合宿8参加レポート | gam0022.net](https://gam0022.net/blog/2022/10/17/rtcamp8/)
 - [レイトレ合宿7でレイマーチング対応のGPUパストレーサーを実装しました！ | gam0022.net](https://gam0022.net/blog/2019/09/18/rtcamp7/)
 - [redflash renderer / Raytracing Camp 7 - Speaker Deck](https://speakerdeck.com/gam0022/raytracing-camp-7)
